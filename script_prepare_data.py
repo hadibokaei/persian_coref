@@ -16,9 +16,9 @@ def get_all_files(path):
 
 data_files_path = []
 
-data_files_path += get_all_files(config.path_data)
-for file_name in listdir(config.path_data):
-    file_path = join(config.path_data, file_name)
+data_files_path += get_all_files(config.path_data_train)
+for file_name in listdir(config.path_data_train):
+    file_path = join(config.path_data_train, file_name)
     if isdir(file_path):
         data_files_path += get_all_files(file_path)
 
@@ -27,13 +27,15 @@ for file_name in listdir(config.path_data):
 # data_files_path = data_files_path[:10]
 vocab = Vocabulary()
 if vocab.check_if_vocab_exists(config.path_vocabulary):
-    # answer = input("vocab exists. load(press 'l') or build(press anything other than 'l') again:")
-    answer = ''
+    answer = input("vocab exists. load(press 'l') or build(press anything other than 'l') again:")
     if answer == "l":
         vocab.load_vocab(config.path_vocabulary)
     else:
         vocab.build_vocab(data_files_path)
         vocab.dump_vocab(config.path_vocabulary)
+else:
+    vocab.build_vocab(data_files_path)
+    vocab.dump_vocab(config.path_vocabulary)
 
 # Step2:
 # تبدیل کلمات داخت متون به اندیس واژگان: فایل‌ها را یکی یکی خوانده و پس از تبدیل به اندیس در یک فایل جدید با پسوند «ایند» می‌نویسد
@@ -42,6 +44,11 @@ def extract_span_id(text):
     text = text.replace('(','')
     text = text.replace(')','')
     return int(text)
+
+for file in data_files_path:
+    convert_to_numpy_array(file, file + "npz", vocab)
+
+
 
 
 
@@ -183,10 +190,4 @@ for file in data_files_path:
         f.write("num words:\t{}\n".format(word_counter))
         f.write("num clusters:\t{}\n".format(len(clusters_glob_ids)))
         f.write("num spans:\t{}\n".format(len(all_span_glob_ids)))
-
-
-
-
-exit()
-
 

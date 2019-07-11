@@ -52,7 +52,13 @@ class CorefModel(object):
     def add_lstm(self):
         cell_fw = tf.keras.layers.LSTM(units=self.lstm_unit_size, activation='relu', return_sequences=True)
         cell_bw = tf.keras.layers.LSTM(units=self.lstm_unit_size, activation='relu', return_sequences=True, go_backwards=True)
-        self.lstm_output = tf.keras.layers.Bidirectional(layer=cell_fw, backward_layer=cell_bw, merge_mode='concat')(self.word_representation)
+        lstm_output_tmp = tf.keras.layers.Bidirectional(layer=cell_fw, backward_layer=cell_bw, merge_mode='concat')(self.word_representation) #shape = [# of sentences, max num of words in each sentence, 2 * lstm hidden size]
+
+        self.lstm_output = tf.concat([tf.expand_dims(tf.zeros_like(lstm_output_tmp[0]),0),lstm_output_tmp], axis = 0)
+
+        # a = tf.concat([tf.reshape(self.lstm_output[0][0], shape=[1,1,-1]),tf.reshape(self.lstm_output[0][0], shape=[1,1,-1])], axis=1)
+        a = tf.gather_nd(self.lstm_output, [[1,2,1]])
+
 
         print(self.lstm_output)
 
