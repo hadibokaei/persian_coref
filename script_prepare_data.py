@@ -45,13 +45,16 @@ def extract_span_id(text):
     text = text.replace(')','')
     return int(text)
 
+counter = 0
 for file in data_files_path:
-    convert_to_numpy_array(file, file + "npz", vocab)
+    counter += 1
+    logger.info("{}/{} start to convert the file numpy arrays: {}".format(counter, len(data_files_path), file))
+    convert_to_numpy_array(file, file + ".npz", vocab)
 
 
 
 
-
+exit()
 '''
 نکته مهم:
 ۲ نوع شناسه برای تمام عبارات وجود دارد:
