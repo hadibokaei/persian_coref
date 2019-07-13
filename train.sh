@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-rm -rf files
+#rm -rf files
 
 mkdir files
 mkdir files/data

@@ -113,7 +113,7 @@ class CorefModel(object):
 
     def add_phrase_loss_train(self):
         log_likelihood = -tf.log(self.candidate_phrase_probability)
-        phrase_ll = tf.reduce_sum(tf.boolean_mask(self.candidate_phrase_probability,self.gold_phrases))
+        phrase_ll = tf.reduce_sum(tf.boolean_mask(self.log_likelihood,self.gold_phrases))
         non_phrase_ll = tf.reduce_sum(log_likelihood) - phrase_ll
         self.phrase_identification_loss = phrase_ll - non_phrase_ll
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.phrase_identification_loss)
