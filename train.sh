@@ -7,7 +7,7 @@ mkdir files/data
 
 pwd
 echo 1
-cp $1 files
+cp "$1" "files/we.vec"
 echo 2
 
 
