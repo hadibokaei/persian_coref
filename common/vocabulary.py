@@ -1,13 +1,14 @@
 from common.utility import logger
 import pickle
 from os.path import isfile
+import numpy as np
 
 class Vocabulary(object):
 
     def __init__(self):
         self.id2word = dict()
         self.word2id = dict()
-        self.vocab_size = 0
+        self.last_word_index = 0
         self.id2count = dict()
         self.OOV_string = "<oov>"
         self.OOV_id = 0
@@ -34,8 +35,8 @@ class Vocabulary(object):
                         continue
                     word = splitted_line[0]
                     if word not in self.word2id.keys():
-                        self.vocab_size += 1
-                        id = self.vocab_size
+                        self.last_word_index += 1
+                        id = self.last_word_index
                         self.id2word[id] = word
                         self.word2id[word] = id
                         self.id2count[id] = 1
@@ -135,3 +136,33 @@ class Vocabulary(object):
     def get_char_id(self, char):
         id = self.char2id[char]
         return id
+
+    def dump_trimmed_word_embeddings(self, we_file_name, trimmed_file_name, dim):
+        logger.info("start to trim the word embedding vectors: {}".format(we_file_name))
+        embeddings = np.zeros([self.last_word_index + 1, dim])
+        with open(we_file_name) as f:
+            for line in f:
+                line = line.strip().split(' ')
+                word = line[0]
+                embedding = [float(x) for x in line[1:]]
+                if word in self.word2id.keys():
+                    word_idx = self.word2id[word]
+                    embeddings[word_idx] = np.asarray(embedding)
+
+        logger.info("number of words: {}".format(len(embeddings)))
+        np.savez_compressed(trimmed_file_name, embeddings=embeddings)
+        logger.info("trimmed file is stored in: {}".format(trimmed_file_name))
+        return embeddings
+
+    def load_trimmed_word_embeddings(self, trimmed_file_name):
+        """
+        load the previously saved trimmed word embeddings
+        :param trimmed_file_name: the path
+        :return: the word embedding
+        """
+        logger.info("start to load the trimmed file: {}".format(trimmed_file_name + ".npz"))
+        with np.load(trimmed_file_name + ".npz") as data:
+            we = data["embeddings"]
+            [w,d] = np.shape(we)
+            logger.info("data is loaded. vocab size: {}  dim: {}".format(w,d))
+            return we
