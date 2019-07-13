@@ -22,7 +22,7 @@ all_docs_gold_phrases = []
 all_docs_phrase_length = []
 counter = 1
 logger.info("start to load the data files with format npz...")
-data_files_path = data_files_path[:10]
+# data_files_path = data_files_path[:10]
 for file in data_files_path:
     print("{}/{}".format(counter, len(data_files_path)), end="\r")
     counter += 1
