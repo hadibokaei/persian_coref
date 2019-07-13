@@ -11,7 +11,7 @@ unzip files/data/train.zip -d files/data/
 
 pwd
 echo 1
-cp $1 files/we.vec
+cp $1 "files/we.vec"
 echo 2
-python script_prepare_data.py
-python script_train.py
+#python script_prepare_data.py
+#python script_train.py
