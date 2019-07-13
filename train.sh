@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+rm -rf files
+
 mkdir files
 mkdir files/data
 
