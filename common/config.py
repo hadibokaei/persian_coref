@@ -5,9 +5,9 @@ path_data_train = path_data + "train/"
 
 path_vocabulary = path_files_base_directory + "words.vocab"
 
-path_full_word_embedding = path_files_base_directory + "wiki_news_fasttext_sg_d300_w10.vec"
+path_full_word_embedding = path_files_base_directory + "we.vec"
 
-path_trimmed_word_embedding = path_files_base_directory + "word_embedding.trimmed"
+path_trimmed_word_embedding = path_files_base_directory + "we.trimmed"
 
 word_embedding_dimension = 300
 char_embedding_dimension = 20
