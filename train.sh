@@ -9,4 +9,4 @@ unzip files/data/train.zip -d files/data/
 
 cp $1 files/we.vec
 
-python script_train
+python script_train.py
