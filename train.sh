@@ -8,3 +8,5 @@ mv "train.zip?dl=0" files/data/train.zip
 unzip files/data/train.zip -d files/data/
 
 cp $1 files/we.vec
+
+python script_train
