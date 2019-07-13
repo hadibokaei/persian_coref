@@ -20,6 +20,15 @@ logger = setup_custom_logger(__name__)
 
 
 def convert_to_numpy_array(input_file_name, output_file_name, vocab):
+    '''
+    تمام لیست‌های لازم را از داخل یک فایل آموزشی استخراج می‌کند و در قالب یک فایل ذخیره می‌کند. مواردی که ساتخراج می‌شود:
+    doc_word: shape = [num of sentences, num of words in sentences] تعداد کلمات داخل جملات یکسان نیست
+    doc_char: shape = [num of sentences, num of words in sentences, max num of chars in a word]
+    :param input_file_name:
+    :param output_file_name:
+    :param vocab:
+    :return:
+    '''
     doc_word = []
     doc_word_raw = []
     doc_char = []
