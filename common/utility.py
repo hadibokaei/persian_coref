@@ -172,7 +172,6 @@ def pad_sequences(sequences, pad_tok, nlevels=1):
 
     """
 
-    print(np.shape(sequences))
     if nlevels == 1:
         max_length = max(map(lambda x : len(x), sequences))
         sequence_padded, sequence_length = _pad_sequences(sequences,
