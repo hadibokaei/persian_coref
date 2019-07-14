@@ -20,13 +20,13 @@ all_docs_char_ids = []
 all_docs_phrase_indices = []
 all_docs_gold_phrases = []
 all_docs_phrase_length = []
-counter = 1
 logger.info("start to load the data files with format npz...")
 data_files_path = data_files_path[140:150]
 for file in data_files_path:
-    print("{}/{}".format(counter, len(data_files_path)), end="\r")
-    counter += 1
     doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase = load_data(file)
+    for sen in doc_word:
+        if len(sen)==0:
+            print("====================================={}".format(file))
     all_docs_word_ids.append(doc_word)
     all_docs_char_ids.append(doc_char)
     all_docs_phrase_indices.append((phrase_word))
