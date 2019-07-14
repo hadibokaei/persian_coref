@@ -157,7 +157,8 @@ class CorefModel(object):
                     self.word_length: current_word_length,
                     self.phrase_indices: all_docs_phrase_indices[batch_number],
                     self.gold_phrases: current_gold_phrase,
-                    self.phrase_length: all_docs_phrase_length[batch_number]
+                    self.phrase_length: all_docs_phrase_length[batch_number],
+                    self.phrase_weights: current_weight
                 }
                 [_, loss, p] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
 
