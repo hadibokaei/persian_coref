@@ -121,7 +121,7 @@ class CorefModel(object):
         for epoch in range(epoch_start, max_epoch_number):
             for batch_number in range(len(all_docs_word_ids)):
                 current_word_ids = all_docs_word_ids[batch_number]
-                if np.shape(current_word_ids) == 0:
+                if np.shape(current_word_ids)[0] == 0:
                     print("this batch is zero length. continue...")
                     continue
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
