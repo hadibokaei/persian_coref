@@ -24,12 +24,8 @@ logger.info("start to load the data files with format npz...")
 data_files_path = data_files_path[146:147]
 for file in data_files_path:
     doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase = load_data(file)
-    print(file)
-    print(len(doc_word))
-    for sen in doc_word:
-        print(len(sen))
-        if len(sen)==0:
-            print("====================================={}".format(file))
+    if len(doc_word) == 0:
+        continue
     all_docs_word_ids.append(doc_word)
     all_docs_char_ids.append(doc_char)
     all_docs_phrase_indices.append((phrase_word))
