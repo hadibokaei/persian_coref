@@ -44,6 +44,9 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
         for line in f.readlines():
             splitted_line = line.split()
             if len(splitted_line) == 0:
+                assert len(current_sentence_word) == len(current_sentence_char)
+                if len(current_sentence_word) == 0:
+                    continue
                 doc_word.append(current_sentence_word)
                 doc_word_raw.append(current_sentence_word_raw)
                 doc_char.append(current_sentence_char)
@@ -108,6 +111,9 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
 
     assert len(phrase_word_len) == len(phrase_word)
     assert len(phrase_word) == len(gold_phrase)
+
+    # if len(doc_word) < 2:
+    #     print(input_file_name)
 
     # for i in range(len(gold_phrase)):
     #     if gold_phrase[i] == 1:
