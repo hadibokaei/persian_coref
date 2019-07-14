@@ -127,6 +127,7 @@ class CorefModel(object):
         #                                                                                         , logits=self.candidate_phrase_probability))
         # self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, w)
         self.phrase_identification_loss = tf.nn.weighted_cross_entropy_with_logits(gold_2d, pred_2d, 100)
+
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.phrase_identification_loss)
 
     def train_phrase_identification(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
