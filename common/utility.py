@@ -46,6 +46,7 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
             if len(splitted_line) == 0:
                 assert len(current_sentence_word) == len(current_sentence_char)
                 if len(current_sentence_word) == 0:
+                    print("===========================================================================")
                     continue
                 assert len(current_sentence_word) > 0
                 assert len(current_sentence_char) > 0
