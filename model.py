@@ -147,6 +147,8 @@ class CorefModel(object):
 
                 a = p[all_docs_gold_phrases[batch_number]==1]
                 print(a)
+                b = p[all_docs_gold_phrases[batch_number]==0]
+                print(b[:20])
 
                 # np.set_printoptions(threshold=100000)
                 # print(repr(p))
