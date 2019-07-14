@@ -146,9 +146,9 @@ class CorefModel(object):
                 logger.info("epoch: {} batch: {} phrase identification loss on train: {}".format(epoch, batch_number, loss))
 
                 a = p[all_docs_gold_phrases[batch_number]==1]
-                print(a)
+                print(a[:5])
                 b = p[all_docs_gold_phrases[batch_number]==0]
-                print(b[:20])
+                print(b[:5])
 
                 # np.set_printoptions(threshold=100000)
                 # print(repr(p))
