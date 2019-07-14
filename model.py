@@ -144,6 +144,7 @@ class CorefModel(object):
                 [_, loss, p] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
 
                 logger.info("epoch: {} batch: {} phrase identification loss on train: {}".format(epoch, batch_number, loss))
+                np.set_printoptions(threshold=100000)
                 print(repr(p))
                 print(repr(self.gold_phrases))
 
