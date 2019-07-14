@@ -122,11 +122,15 @@ class CorefModel(object):
             for batch_number in range(len(all_docs_word_ids)):
                 current_word_ids = all_docs_word_ids[batch_number]
                 if np.shape(current_word_ids)[0] == 0:
-                    print("===============================================================================================================this batch is zero length. continue...")
+                    print("===============================================================================================================this batch is zero length(1). continue...")
                     continue
+
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
                 current_char_ids = all_docs_char_ids[batch_number]
+                if np.shape(current_char_ids)[0] == 0:
+                    print("===============================================================================================================this batch is zero length(2). continue...")
+                    continue
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
                 feed_dict = {
