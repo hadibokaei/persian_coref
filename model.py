@@ -112,10 +112,20 @@ class CorefModel(object):
         self.candidate_phrase_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of candidate phrases]
 
     def add_phrase_loss_train(self):
-        self.phrase_identification_loss = tf.reduce_sum(- 20*tf.math.multiply(tf.to_float(self.gold_phrases),tf.math.log(self.candidate_phrase_probability)) \
-                                          - tf.math.multiply(1-tf.to_float(self.gold_phrases),tf.math.log(1-self.candidate_phrase_probability)))
+
+        gold = tf.expand_dims(tf.to_float(self.gold_phrases),1)
+        gold_2d = tf.concat([gold,1-gold],1)
+
+        pred = tf.expand_dims(self.candidate_phrase_probability,1)
+        pred_2d = tf.concat([pred,1-pred],1)
+
+        w = tf.constant([[20,1]])
+
+        # self.phrase_identification_loss = tf.reduce_sum(- 20*tf.math.multiply(tf.to_float(self.gold_phrases),tf.math.log(self.candidate_phrase_probability)) \
+        #                                   - tf.math.multiply(1-tf.to_float(self.gold_phrases),tf.math.log(1-self.candidate_phrase_probability)))
         # self.phrase_identification_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.to_float(self.gold_phrases)
         #                                                                                         , logits=self.candidate_phrase_probability))
+        self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, w)
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.phrase_identification_loss)
 
     def train_phrase_identification(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
@@ -131,6 +141,9 @@ class CorefModel(object):
                 current_char_ids = all_docs_char_ids[batch_number]
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
+                current_gold_phrase =  all_docs_gold_phrases[batch_number]
+                weight = len(current_gold_phrase)/np.sum(current_gold_phrase)
+
                 feed_dict = {
                     self.word_ids: current_word_ids,
                     self.word_embedding: word_embedding,
@@ -138,7 +151,7 @@ class CorefModel(object):
                     self.char_ids: current_char_ids,
                     self.word_length: current_word_length,
                     self.phrase_indices: all_docs_phrase_indices[batch_number],
-                    self.gold_phrases: all_docs_gold_phrases[batch_number],
+                    self.gold_phrases: current_gold_phrase,
                     self.phrase_length: all_docs_phrase_length[batch_number]
                 }
                 [_, loss, p] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
