@@ -119,7 +119,7 @@ class CorefModel(object):
         pred = tf.expand_dims(self.candidate_phrase_probability,1)
         pred_2d = tf.concat([pred,1-pred],1)
 
-        w = tf.constant([[1000,1]])
+        w = tf.constant([[1,1000]])
 
         # self.phrase_identification_loss = tf.reduce_sum(- 20*tf.math.multiply(tf.to_float(self.gold_phrases),tf.math.log(self.candidate_phrase_probability)) \
         #                                   - tf.math.multiply(1-tf.to_float(self.gold_phrases),tf.math.log(1-self.candidate_phrase_probability)))
