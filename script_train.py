@@ -21,7 +21,7 @@ all_docs_phrase_indices = []
 all_docs_gold_phrases = []
 all_docs_phrase_length = []
 logger.info("start to load the data files with format npz...")
-data_files_path = data_files_path[146:147]
+# data_files_path = data_files_path[146:147]
 for file in data_files_path:
     doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase = load_data(file)
     if len(doc_word) == 0:
