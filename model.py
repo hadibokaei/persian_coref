@@ -145,7 +145,7 @@ class CorefModel(object):
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
                 current_gold_phrase = all_docs_gold_phrases[batch_number]
-                weight = len(current_gold_phrase)/np.sum(current_gold_phrase)
+                weight = len(current_gold_phrase)/(2*np.sum(current_gold_phrase))
 
                 current_weight = current_gold_phrase*weight + 1
 
