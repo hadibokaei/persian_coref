@@ -25,6 +25,7 @@ data_files_path = data_files_path[140:150]
 for file in data_files_path:
     doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase = load_data(file)
     for sen in doc_word:
+        print(len(sen))
         if len(sen)==0:
             print("====================================={}".format(file))
     all_docs_word_ids.append(doc_word)
