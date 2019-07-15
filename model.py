@@ -138,8 +138,6 @@ class CorefModel(object):
             for batch_number in range(len(all_docs_word_ids)):
                 current_word_ids = all_docs_word_ids[batch_number]
 
-                print(np.shape(current_word_ids))
-
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
                 current_char_ids = all_docs_char_ids[batch_number]
@@ -174,18 +172,10 @@ class CorefModel(object):
                 logger.info("epoch: {} batch: {} phrase identification loss {} precision {} recall {} f1 measure {}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
-
-
-
-
-                a = pred[all_docs_gold_phrases[batch_number]==1]
-                print(a[:5])
-                b = pred[all_docs_gold_phrases[batch_number]==0]
-                print(b[:5])
-
-                # np.set_printoptions(threshold=100000)
-                # print(repr(p))
-                # print(repr(all_docs_gold_phrases[batch_number]))
+                # a = pred[all_docs_gold_phrases[batch_number]==1]
+                # print(a[:5])
+                # b = pred[all_docs_gold_phrases[batch_number]==0]
+                # print(b[:5])
 
 
 
