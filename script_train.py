@@ -5,6 +5,7 @@ from common.vocabulary import Vocabulary
 from os import listdir
 from os.path import isdir, isfile, join
 from common import config
+import numpy as np
 
 
 data_files_path = []
@@ -25,6 +26,10 @@ logger.info("start to load the data files with format npz...")
 for file in data_files_path:
     doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase = load_data(file)
     if len(doc_word) == 0:
+        print("skip this file (zero length document): {}".format(file))
+        continue
+    if np.sum(gold_phrase) == 0:
+        print("skip this file (no phrase): {}".format(file))
         continue
     all_docs_word_ids.append(doc_word)
     all_docs_char_ids.append(doc_char)
