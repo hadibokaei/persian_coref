@@ -2,6 +2,7 @@ import tensorflow as tf
 from  common.utility import pad_sequences, logger
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score
+from itertools import product
 
 class CorefModel(object):
 
@@ -112,6 +113,24 @@ class CorefModel(object):
     def add_fcn(self):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
         self.candidate_phrase_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of candidate phrases]
+
+        best_score_indices = tf.math.top_k(self.candidate_phrase_probability, k=50).indices
+
+        x = tf.gather_nd(self.phrase_rep, tf.expand_dims(best_score_indices, 1))
+
+        x = tf.reshape(x, shape=[50, 2 * self.lstm_unit_size])
+
+        rows_x, dim = x.get_shape()
+        print(rows_x)
+        print(dim)
+
+
+        z = tf.Variable(initial_value=tf.zeros([rows_x * rows_x, 2 * dim]), dtype=tf.float32)
+        for i, (x_id, y_id) in enumerate(product(range(rows_x), range(rows_x))):
+            z = tf.scatter_update(z, i, tf.concat([x[x_id], x[y_id]], axis=0))
+
+        print(z.get_shape())
+
 
     def add_phrase_loss_train(self):
 
