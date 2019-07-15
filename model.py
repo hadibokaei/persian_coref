@@ -1,6 +1,7 @@
 import tensorflow as tf
 from  common.utility import pad_sequences, logger
 import numpy as np
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 class CorefModel(object):
 
@@ -160,13 +161,26 @@ class CorefModel(object):
                     self.phrase_length: all_docs_phrase_length[batch_number],
                     self.phrase_weights: current_weight
                 }
-                [_, loss, p] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
+                [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
 
-                logger.info("epoch: {} batch: {} phrase identification loss on train: {}".format(epoch, batch_number, loss))
+                pred[pred > 0.5] = 1
+                pred[pred <= 0.5] = 0
 
-                a = p[all_docs_gold_phrases[batch_number]==1]
+                gold = all_docs_gold_phrases[batch_number]
+
+                precision = precision_score(gold, pred)
+                recall = recall_score(gold, pred)
+                f1_measure = f1_score(gold, pred)
+                logger.info("epoch: {} batch: {} phrase identification loss {} precision {} recall {} f1 measure {}"
+                            .format(epoch, batch_number, loss, precision, recall, f1_measure))
+
+
+
+
+
+                a = pred[all_docs_gold_phrases[batch_number]==1]
                 print(a[:5])
-                b = p[all_docs_gold_phrases[batch_number]==0]
+                b = pred[all_docs_gold_phrases[batch_number]==0]
                 print(b[:5])
 
                 # np.set_printoptions(threshold=100000)
