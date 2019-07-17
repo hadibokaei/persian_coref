@@ -201,6 +201,31 @@ class CorefModel(object):
 
 
 
+# phrase_rep = tf.constant([[1,2,3],[2,3,4],[3,4,5],[4,5,6]])
+# pair_rep_indices = tf.constant([[[0],[1]],[[0],[2]],[[0],[3]],[[1],[2]],[[1],[3]],[[2],[3]]])
+# pair_gold = tf.constant([0,0,1,0,0,1])
+# phrase_scores = tf.constant([3,1,4,5])
+#
+# pair_rep = tf.reshape(tf.gather_nd(phrase_rep, pair_rep_indices), shape=[6,6])
+# pair_score = tf.gather_nd(phrase_scores, pair_rep_indices)
+# pair_min_score = tf.reduce_min(pair_score,axis = 1)
+#
+# pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=4).indices, 1)
+#
+#
+#
+# pair_pruned_rep = tf.gather_nd(pair_rep, pair_candidate_indices)
+# pair_pruned_gold = tf.gather_nd(pair_gold, pair_candidate_indices)
+# pair_min_pruned_score = tf.gather_nd(pair_min_score, pair_candidate_indices)
+#
+# pair_rep.eval()
+# pair_score.eval()
+# pair_min_score.eval()
+# pair_candidate_indices.eval()
+#
+# pair_pruned_rep.eval()
+# pair_pruned_gold.eval()
+# pair_min_pruned_score.eval()
 
 
 
