@@ -128,6 +128,19 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
     assert len(phrase_word_len) == len(phrase_word)
     assert len(phrase_word) == len(gold_phrase)
 
+    pair_indices = []
+    pair_gold = []
+    for i in range(len(phrase_word)):
+        print("{}/{}".format(i,len(phrase_word)), end = '\r')
+        counter = 0
+        for j in range(i+1,len(phrase_word)):
+            if not any(item in phrase_word[i][:phrase_word_len[i]] for item in phrase_word[j][:phrase_word_len[j]]):
+                pair_indices.append([[i],[j]])
+                counter += 1
+            if counter > config.phrase_max_gap * config.phrase_max_size:
+                break
+
+
     # if len(doc_word) < 2:
     #     print(input_file_name)
 
@@ -138,7 +151,18 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
 
     np.savez_compressed(output_file_name, doc_word=doc_word
                         , doc_char=doc_char, phrase_word = phrase_word
-                        , phrase_word_len=phrase_word_len, gold_phrase=gold_phrase)
+                        , phrase_word_len=phrase_word_len, gold_phrase=gold_phrase, pair_indices = pair_indices)
+
+def pair_has_overlap(phrase1, phrase2):
+    has_overlap = False
+    for i in range(len(phrase1)):
+        for j in range(len(phrase2)):
+            if phrase1[i][0] == phrase2[j][0] and phrase1[i][1] == phrase2[j][1]:
+                has_overlap = True
+                break
+        if has_overlap:
+            break
+    return has_overlap
 
 def load_data(file_name):
     with np.load(file_name) as data:

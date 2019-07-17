@@ -26,6 +26,7 @@ class CorefModel(object):
         self.add_lstm()
         self.add_fcn()
         self.add_phrase_loss_train()
+        self.add_pair_processing()
         self.initialize_session()
 
     def initialize_session(self):
@@ -44,6 +45,10 @@ class CorefModel(object):
         self.gold_phrases       = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
         self.phrase_length      = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
         self.phrase_weights     = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
+        self.pair_rep_indices   = tf.placeholder(tf.int32, shape=[None, 2, 1]) #shape=[# of candidate pairs in doc, 2, 1]
+        self.pair_gold          = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs in doc]
+        self.pruned_cand_pair   = tf.placeholder(tf.int32, shape=[]) #scalar
+
 
         # num_sentence    = 2
         # max_num_words   = 3
@@ -114,23 +119,17 @@ class CorefModel(object):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
         self.candidate_phrase_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of candidate phrases]
 
-        best_score_indices = tf.math.top_k(self.candidate_phrase_probability, k=50).indices
+    def add_pair_processing(self):
+        pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices), shape=[-1, 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
+        pair_score = tf.gather_nd(self.candidate_phrase_probability, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
+        pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
+        pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=self.pruned_cand_pair).indices, 1)
 
-        x = tf.gather_nd(self.phrase_rep, tf.expand_dims(best_score_indices, 1))
+        self.pair_pruned_rep = tf.gather_nd(pair_rep, pair_candidate_indices) # shape = [# of pruned candidate pairs, 4 * lstm hidden size]
+        self.pair_pruned_gold = tf.gather_nd(self.pair_gold, pair_candidate_indices) #shape=[# of pruned candidate pairs in doc]
+        self.pair_min_pruned_score = tf.gather_nd(pair_min_score, pair_candidate_indices) # shape = [# of pruned candidate pairs]
 
-        x = tf.reshape(x, shape=[50, 2 * self.lstm_unit_size])
-
-        rows_x, dim = x.get_shape()
-        print(rows_x)
-        print(dim)
-
-
-        z = tf.Variable(initial_value=tf.zeros([rows_x * rows_x, 2 * dim]), dtype=tf.float32)
-        for i, (x_id, y_id) in enumerate(product(range(rows_x), range(rows_x))):
-            z = tf.scatter_update(z, i, tf.concat([x[x_id], x[y_id]], axis=0))
-
-        print(z.get_shape())
-
+        print(tf.shape(self.pair_min_pruned_score))
 
     def add_phrase_loss_train(self):
 
