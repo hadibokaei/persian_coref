@@ -142,6 +142,19 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
     assert len(phrase_word) == len(gold_phrase)
     assert len(phrase_word) == len(phrase_id)
 
+    clusters = []
+    for pair in phrase_id_pair:
+        found = False
+        for i in range(len(clusters)):
+            if pair[0] in clusters[i] or pair[1] in clusters[i]:
+                clusters[i].add(pair[0])
+                clusters[i].add(pair[1])
+                found = True
+        if not found:
+            clusters.append(set())
+            clusters[-1].add(pair[0])
+            clusters[-1].add(pair[1])
+
     pair_indices = []
     pair_gold = []
     for i in range(len(phrase_word)):
@@ -150,10 +163,25 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
         for j in range(i+1,len(phrase_word)):
             if not any(item in phrase_word[i][:phrase_word_len[i]] for item in phrase_word[j][:phrase_word_len[j]]):
                 pair_indices.append([[i],[j]])
+                if gold_phrase[i] == 1 and gold_phrase[j] == 1:
+                    phrase1_id = phrase_id[i]
+                    phrase2_id = phrase_id[j]
+                    same_cluster = False
+                    for clstr in clusters:
+                        if phrase1_id in clstr and phrase2_id in clstr:
+                            same_cluster = True
+                            break
+                    if same_cluster:
+                        pair_gold.append(1)
+                    else:
+                        pair_gold.append(0)
+                else:
+                    pair_gold.append(0)
                 counter += 1
             if counter > config.phrase_max_gap * config.phrase_max_size:
                 break
 
+    assert len(pair_indices) == len(pair_gold)
 
     # if len(doc_word) < 2:
     #     print(input_file_name)
