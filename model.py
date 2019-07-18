@@ -133,9 +133,13 @@ class CorefModel(object):
         print(pair_candidate_indices)
 
         self.pair_pruned_gold = tf.gather_nd(self.pair_gold, pair_candidate_indices) #shape=[# of pruned candidate pairs in doc]
+        print(self.pair_pruned_gold)
         self.pair_min_pruned_score = tf.gather_nd(pair_min_score, pair_candidate_indices) # shape = [# of pruned candidate pairs]
+        print(self.pair_min_pruned_score)
         self.pair_pruned_weights = tf.gather_nd(self.pair_weights, pair_candidate_indices) # shape = [# of pruned candidate pairs]
+        print(self.pair_pruned_weights)
         self.pair_pruned_rep = tf.gather_nd(pair_rep, pair_candidate_indices) # shape = [# of pruned candidate pairs, 4 * lstm hidden size]
+        print(self.pair_pruned_rep)
 
         self.pair_pruned_rep = tf.reshape(self.pair_pruned_rep, shape=[-1, 4 *self.lstm_unit_size])
 
