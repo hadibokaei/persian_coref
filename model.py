@@ -127,7 +127,7 @@ class CorefModel(object):
         pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices), shape=[-1, 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
         pair_score = tf.gather_nd(self.candidate_phrase_probability, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
         pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
-        pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=self.pruned_cand_pair).indices, 1, type=tf.int64)
+        pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=self.pruned_cand_pair).indices, 1)
 
         self.pair_pruned_rep = tf.gather_nd(pair_rep, pair_candidate_indices) # shape = [# of pruned candidate pairs, 4 * lstm hidden size]
         self.pair_pruned_gold = tf.gather_nd(self.pair_gold, pair_candidate_indices) #shape=[# of pruned candidate pairs in doc]
@@ -243,6 +243,11 @@ class CorefModel(object):
                 current_pair_weight = current_gold_pair*pair_weight + 1
 
                 pruned_cand_pair = len(current_gold_pair)/100
+
+                logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{}"
+                            .format(len(current_word_ids), len(current_gold_phrase), np.sum(current_gold_phrase), len(current_gold_pair),
+                                    np.sum(current_gold_pair)))
+
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
