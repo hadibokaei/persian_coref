@@ -132,7 +132,7 @@ class CorefModel(object):
         self.pair_pruned_rep = tf.gather_nd(pair_rep, pair_candidate_indices) # shape = [# of pruned candidate pairs, 4 * lstm hidden size]
         self.pair_pruned_gold = tf.gather_nd(self.pair_gold, pair_candidate_indices) #shape=[# of pruned candidate pairs in doc]
         self.pair_min_pruned_score = tf.gather_nd(pair_min_score, pair_candidate_indices) # shape = [# of pruned candidate pairs]
-        self.pair_weights = tf.gather_nd(self.pair_weights, pair_candidate_indices) # shape = [# of pruned candidate pairs]
+        self.pair_pruned_weights = tf.gather_nd(self.pair_weights, pair_candidate_indices) # shape = [# of pruned candidate pairs]
 
         self.pair_pruned_rep = tf.reshape(self.pair_pruned_rep, shape=[-1, 4 *self.lstm_unit_size])
 
@@ -158,17 +158,13 @@ class CorefModel(object):
 
     def add_pair_loss_train(self):
 
-        gold = tf.expand_dims(tf.to_float(self.pair_gold),1)
+        gold = tf.expand_dims(tf.to_float(self.pair_pruned_gold),1)
         gold_2d = tf.concat([gold,1-gold],1)
 
         pred = tf.expand_dims(self.candidate_pair_probability,1)
         pred_2d = tf.concat([pred,1-pred],1)
 
-        w = tf.expand_dims(self.pair_weights,1)
-
-        print(gold_2d)
-        print(pred_2d)
-        print(w)
+        w = tf.expand_dims(self.pair_pruned_weights,1)
 
         self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, w)
 
