@@ -124,7 +124,7 @@ class CorefModel(object):
         self.candidate_phrase_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of candidate phrases]
 
     def add_pair_processing(self):
-        pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices), shape=[-1, 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
+        pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices), shape=[-1, 8*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
         print(pair_rep)
         pair_score = tf.gather_nd(self.candidate_phrase_probability, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
         pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
