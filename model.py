@@ -135,7 +135,7 @@ class CorefModel(object):
         self.pair_min_pruned_score = tf.gather_nd(pair_min_score, pair_candidate_indices) # shape = [# of pruned candidate pairs]
         self.pair_pruned_weights = tf.gather_nd(self.pair_weights, pair_candidate_indices) # shape = [# of pruned candidate pairs]
 
-        self.pair_pruned_rep = tf.reshape(self.pair_pruned_rep, shape=[-1, 4 *self.lstm_unit_size])
+        self.pair_pruned_rep = tf.reshape(self.pair_pruned_rep, shape=[-1, 8 *self.lstm_unit_size])
 
         print(tf.shape(self.pair_pruned_rep))
 
