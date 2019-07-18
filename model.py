@@ -160,7 +160,7 @@ class CorefModel(object):
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.pair_identification_loss)
 
     def add_final_train(self):
-        self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
+        self.final_loss = self.phrase_identification_loss + 5* self.pair_identification_loss
         self.final_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.final_loss)
 
     def train_phrase_identification(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
