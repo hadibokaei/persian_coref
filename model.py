@@ -244,9 +244,9 @@ class CorefModel(object):
 
                 pruned_cand_pair = len(current_gold_pair)/100
 
-                logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{}"
+                logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{} pruned pair:{}"
                             .format(len(current_word_ids), len(current_gold_phrase), np.sum(current_gold_phrase), len(current_gold_pair),
-                                    np.sum(current_gold_pair)))
+                                    np.sum(current_gold_pair), pruned_cand_pair))
 
 
                 feed_dict = {
