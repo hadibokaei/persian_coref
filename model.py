@@ -266,6 +266,10 @@ class CorefModel(object):
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
+                a = pred[current_gold_pair==1]
+                print(a[:5])
+                b = pred[current_gold_pair==0]
+                print(b[:5])
 
 
 # phrase_rep = tf.constant([[1,2,3],[2,3,4],[3,4,5],[4,5,6]])
