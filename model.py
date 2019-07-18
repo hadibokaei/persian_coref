@@ -166,6 +166,10 @@ class CorefModel(object):
 
         w = tf.expand_dims(self.pair_weights,1)
 
+        print(gold_2d)
+        print(pred_2d)
+        print(w)
+
         self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, w)
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.pair_identification_loss)
