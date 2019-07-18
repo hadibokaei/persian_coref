@@ -232,7 +232,7 @@ class CorefModel(object):
                 pair_weight = 100
                 current_pair_weight = current_gold_pair*pair_weight + 1
 
-                pruned_cand_pair = int(len(current_gold_pair)/100)
+                pruned_cand_pair = int(len(current_gold_pair)/10)
 
                 # logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{} pruned pair:{}"
                 #             .format(len(current_word_ids), len(current_gold_phrase), np.sum(current_gold_phrase), np.shape(all_docs_pair_indices[batch_number]),
@@ -265,6 +265,9 @@ class CorefModel(object):
                 f1_measure = f1_score(gold, pred) * 100
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
+
+                print(np.sum(gold))
+                print(np.sum(pred))
 
                 a = pred[gold==1]
                 print(a[:5])
