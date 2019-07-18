@@ -262,6 +262,8 @@ class CorefModel(object):
                 [_, loss, pred, gold] = self.sess.run([self.final_train, self.final_loss
                                                           , self.candidate_pair_probability, self.pair_pruned_gold], feed_dict)
 
+                print(np.shape(pred))
+                print(np.shape(gold))
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
 
