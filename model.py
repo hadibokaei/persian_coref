@@ -29,7 +29,7 @@ class CorefModel(object):
         self.add_pair_processing()
         self.add_fcn_pair()
         self.add_pair_loss_train()
-
+        self.add_final_train()
         self.initialize_session()
 
     def initialize_session(self):
