@@ -229,7 +229,7 @@ class CorefModel(object):
                 current_gold_pair = all_docs_pair_golds[batch_number]
 
                 # pair_weight = len(current_gold_pair)/(4*np.sum(current_gold_pair))
-                pair_weight = 100
+                pair_weight = 1000
                 current_pair_weight = current_gold_pair*pair_weight + 1
 
                 pruned_cand_pair = int(len(current_gold_pair)/10)
@@ -266,13 +266,14 @@ class CorefModel(object):
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
+                print(np.sum(current_gold_pair))
                 print(np.sum(gold))
                 print(np.sum(pred))
 
-                a = pred[gold==1]
-                print(a[:5])
-                b = pred[gold==0]
-                print(b[:5])
+                # a = pred[gold==1]
+                # print(a[:5])
+                # b = pred[gold==0]
+                # print(b[:5])
 
 
 # phrase_rep = tf.constant([[1,2,3],[2,3,4],[3,4,5],[4,5,6]])
