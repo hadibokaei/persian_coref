@@ -48,7 +48,7 @@ class CorefModel(object):
         self.gold_phrases       = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
         self.phrase_length      = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
         self.phrase_weights     = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
-        self.pair_rep_indices   = tf.placeholder(tf.int32, shape=[None, 2, 1]) #shape=[# of candidate pairs in doc, 2, 1]
+        self.pair_rep_indices   = tf.placeholder(tf.int64, shape=[None, 2, 1]) #shape=[# of candidate pairs in doc, 2, 1]
         self.pair_gold          = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs in doc]
         self.pruned_cand_pair   = tf.placeholder(tf.int32, shape=[]) #scalar
         self.pair_weights       = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs]
@@ -262,8 +262,6 @@ class CorefModel(object):
                 [_, loss, pred, gold] = self.sess.run([self.final_train, self.final_loss
                                                           , self.candidate_pair_probability, self.pair_pruned_gold], feed_dict)
 
-                print(np.shape(pred))
-                print(np.shape(gold))
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
 
