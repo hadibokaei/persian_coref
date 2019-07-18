@@ -128,7 +128,7 @@ class CorefModel(object):
                               , shape=[tf.shape(self.pair_rep_indices)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
         pair_score = tf.gather_nd(self.candidate_phrase_probability, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
         pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
-        pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=self.pruned_cand_pair).indices, 1)
+        pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=100).indices, 1)
 
         print(pair_candidate_indices)
 
