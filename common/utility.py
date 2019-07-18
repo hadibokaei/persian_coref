@@ -84,6 +84,8 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
     phrase_word = []
     phrase_word_len = []
     gold_phrase = []
+    phrase_id = []
+    phrase_id_pair = []
     for sentence_order in range(len(doc_word)):
         for start_word_order in range(len(doc_word[sentence_order])):
             for end_word_order in range(start_word_order + 1, len(doc_word[sentence_order]) + 1):
@@ -96,8 +98,13 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
                     single_word = doc_word_raw[current_phrase[0][0]-1][current_phrase[0][1]]
                     single_tag = single_word.split()[2]
                     if is_number(single_tag):
+                        current_id = int(single_tag)
+                        prev_id = int(single_word.split()[3])
+                        phrase_id.append(current_id)
+                        phrase_id_pair.append([current_id, prev_id])
                         gold_phrase.append(1)
                     else:
+                        phrase_id.append(-1)
                         gold_phrase.append(0)
 
                 else:
@@ -114,10 +121,16 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
                                 all_other_word_is_middle = False
                                 break
                         if all_other_word_is_middle:
+                            current_id = int(start_word.split()[2].replace("(*",""))
+                            prev_id = int(start_word.split()[3].replace("(*",""))
+                            phrase_id.append(current_id)
+                            phrase_id_pair.append([current_id, prev_id])
                             gold_phrase.append(1)
                         else:
+                            phrase_id.append(-1)
                             gold_phrase.append(0)
                     else:
+                        phrase_id.append(-1)
                         gold_phrase.append(0)
 
 
@@ -127,6 +140,7 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
 
     assert len(phrase_word_len) == len(phrase_word)
     assert len(phrase_word) == len(gold_phrase)
+    assert len(phrase_word) == len(phrase_id)
 
     pair_indices = []
     pair_gold = []
