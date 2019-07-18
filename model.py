@@ -54,18 +54,6 @@ class CorefModel(object):
         self.pair_weights       = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs]
 
 
-        # num_sentence    = 2
-        # max_num_words   = 3
-        # num_cand_phrase = 8
-        # self.word_ids           = tf.constant(np.random.randint(0, 10, size=[num_sentence, max_num_words]))
-        # self.word_embedding     = tf.constant(np.random.randint(0, 10, size=[self.word_vocab_size, self.word_embedding_dimension]).astype(np.float32))
-        # self.sentence_length    = tf.constant(np.random.randint(0, max_num_words, size=[num_sentence]))
-        # self.char_ids           = tf.constant(np.random.randint(0, 10, size=[num_sentence, max_num_words, self.max_word_length]))
-        # self.word_length        = tf.constant(np.random.randint(0, 10, size=[num_sentence, max_num_words]))
-        # self.phrase_indices     = tf.constant(np.random.randint(0, 3, size=[num_cand_phrase, self.max_phrase_length, 2]))
-        # self.gold_phrases       = tf.constant(np.random.randint(0, 2, size=[num_cand_phrase]))
-        # self.phrase_length      = tf.constant(np.random.randint(0, self.max_phrase_length, size=[num_cand_phrase]))
-
     def add_word_representation(self):
         embedded_words = tf.nn.embedding_lookup(self.word_embedding, self.word_ids, name="embedded_words") #shape=[# of sentences in doc, max # of words in sentences, word embedding dimension]
         char_embedding = tf.get_variable(dtype=tf.float32, shape=[self.char_vocab_size, self.char_embedding_dimension], name="char_embeddings")
@@ -128,7 +116,7 @@ class CorefModel(object):
                               , shape=[tf.shape(self.pair_rep_indices)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
         pair_score = tf.gather_nd(self.candidate_phrase_probability, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
         pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
-        pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=100).indices, 1)
+        pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=self.pruned_cand_pair).indices, 1)
 
         pair_candidate_indices = tf.cast(pair_candidate_indices, tf.int64)
 
@@ -245,9 +233,9 @@ class CorefModel(object):
 
                 pruned_cand_pair = int(len(current_gold_pair)/100)
 
-                logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{} pruned pair:{}"
-                            .format(len(current_word_ids), len(current_gold_phrase), np.sum(current_gold_phrase), np.shape(all_docs_pair_indices[batch_number]),
-                                    np.sum(current_gold_pair), pruned_cand_pair))
+                # logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{} pruned pair:{}"
+                #             .format(len(current_word_ids), len(current_gold_phrase), np.sum(current_gold_phrase), np.shape(all_docs_pair_indices[batch_number]),
+                #                     np.sum(current_gold_pair), pruned_cand_pair))
 
 
                 feed_dict = {
