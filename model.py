@@ -228,8 +228,8 @@ class CorefModel(object):
 
                 current_gold_pair = all_docs_pair_golds[batch_number]
 
-                # pair_weight = len(current_gold_pair)/(4*np.sum(current_gold_pair))
-                pair_weight = 1000
+                pair_weight = len(current_gold_pair)/(8*np.sum(current_gold_pair))
+                # pair_weight = 1000
                 current_pair_weight = current_gold_pair*pair_weight + 1
 
                 pruned_cand_pair = int(len(current_gold_pair)/10)
