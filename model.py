@@ -266,9 +266,9 @@ class CorefModel(object):
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
-                a = pred[current_gold_pair==1]
+                a = pred[gold==1]
                 print(a[:5])
-                b = pred[current_gold_pair==0]
+                b = pred[gold==0]
                 print(b[:5])
 
 
