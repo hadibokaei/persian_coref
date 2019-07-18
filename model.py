@@ -24,9 +24,12 @@ class CorefModel(object):
         self.add_placeholders()
         self.add_word_representation()
         self.add_lstm()
-        self.add_fcn()
+        self.add_fcn_phrase()
         self.add_phrase_loss_train()
         self.add_pair_processing()
+        self.add_fcn_pair()
+        self.add_pair_loss_train()
+
         self.initialize_session()
 
     def initialize_session(self):
@@ -48,6 +51,7 @@ class CorefModel(object):
         self.pair_rep_indices   = tf.placeholder(tf.int32, shape=[None, 2, 1]) #shape=[# of candidate pairs in doc, 2, 1]
         self.pair_gold          = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs in doc]
         self.pruned_cand_pair   = tf.placeholder(tf.int32, shape=[]) #scalar
+        self.pair_weights       = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs]
 
 
         # num_sentence    = 2
@@ -115,7 +119,7 @@ class CorefModel(object):
                 dtype=tf.float32)
             self.phrase_rep = tf.concat([output_fw, output_bw], axis=-1) # shape = [# of candidate phrases, 2 * lstm hidden size]
 
-    def add_fcn(self):
+    def add_fcn_phrase(self):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
         self.candidate_phrase_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of candidate phrases]
 
@@ -131,6 +135,10 @@ class CorefModel(object):
 
         print(tf.shape(self.pair_min_pruned_score))
 
+    def add_fcn_pair(self):
+        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.pair_pruned_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
+        self.candidate_pair_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of pruned candidate pairs]
+
     def add_phrase_loss_train(self):
 
         gold = tf.expand_dims(tf.to_float(self.gold_phrases),1)
@@ -141,14 +149,27 @@ class CorefModel(object):
 
         w = tf.expand_dims(self.phrase_weights,1)
 
-        # self.phrase_identification_loss = tf.reduce_sum(- 20*tf.math.multiply(tf.to_float(self.gold_phrases),tf.math.log(self.candidate_phrase_probability)) \
-        #                                   - tf.math.multiply(1-tf.to_float(self.gold_phrases),tf.math.log(1-self.candidate_phrase_probability)))
-        # self.phrase_identification_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.to_float(self.gold_phrases)
-        #                                                                                         , logits=self.candidate_phrase_probability))
         self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, w)
-        # self.phrase_identification_loss = tf.reduce_sum(tf.nn.weighted_cross_entropy_with_logits(gold_2d, pred_2d, 0.000000001))
 
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.phrase_identification_loss)
+
+    def add_pair_loss_train(self):
+
+        gold = tf.expand_dims(tf.to_float(self.gold_pairs),1)
+        gold_2d = tf.concat([gold,1-gold],1)
+
+        pred = tf.expand_dims(self.candidate_pair_probability,1)
+        pred_2d = tf.concat([pred,1-pred],1)
+
+        w = tf.expand_dims(self.pair_weights,1)
+
+        self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, w)
+
+        self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.pair_identification_loss)
+
+    def add_final_train(self):
+        self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
+        self.final_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.final_loss)
 
     def train_phrase_identification(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
                                     , all_docs_gold_phrases, all_docs_phrase_length, epoch_start, max_epoch_number):
@@ -195,9 +216,58 @@ class CorefModel(object):
                 # b = pred[all_docs_gold_phrases[batch_number]==0]
                 # print(b[:5])
 
+    def train(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
+              , all_docs_gold_phrases, all_docs_phrase_length
+              , all_docs_pair_indices, all_docs_pair_golds
+              , epoch_start, max_epoch_number):
+        for epoch in range(epoch_start, max_epoch_number):
+            for batch_number in range(len(all_docs_word_ids)):
+                current_word_ids = all_docs_word_ids[batch_number]
 
+                current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
+                current_char_ids = all_docs_char_ids[batch_number]
+                current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
+                current_gold_phrase = all_docs_gold_phrases[batch_number]
+
+                phrase_weight = len(current_gold_phrase)/(4*np.sum(current_gold_phrase))
+                current_phrase_weight = current_gold_phrase*phrase_weight + 1
+
+                current_gold_pair = all_docs_pair_golds[batch_number]
+
+                pair_weight = len(current_gold_pair)/(4*np.sum(current_gold_pair))
+                current_pair_weight = current_gold_pair*pair_weight + 1
+
+                pruned_cand_pair = len(current_gold_pair)/100
+
+                feed_dict = {
+                    self.word_ids: current_word_ids,
+                    self.word_embedding: word_embedding,
+                    self.sentence_length: current_sentence_length,
+                    self.char_ids: current_char_ids,
+                    self.word_length: current_word_length,
+                    self.phrase_indices: all_docs_phrase_indices[batch_number],
+                    self.gold_phrases: current_gold_phrase,
+                    self.phrase_length: all_docs_phrase_length[batch_number],
+                    self.phrase_weights: current_phrase_weight,
+                    self.pair_gold: current_gold_pair,
+                    self.pair_rep_indices: all_docs_pair_indices[batch_number],
+                    self.pair_weights: current_pair_weight,
+                    self.pruned_cand_pair: pruned_cand_pair
+                }
+                [_, loss, pred] = self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability], feed_dict)
+
+                pred[pred > 0.5] = 1
+                pred[pred <= 0.5] = 0
+
+                gold = current_gold_pair
+
+                precision = precision_score(gold, pred) * 100
+                recall = recall_score(gold, pred) * 100
+                f1_measure = f1_score(gold, pred) * 100
+                logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
+                            .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
 
 

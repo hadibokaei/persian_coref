@@ -16,15 +16,19 @@ for file_name in listdir(config.path_data_train):
     if isdir(file_path):
         data_files_path += get_all_files(file_path, '.npz')
 
+logger.info("{} number of files found.".format(len(data_files_path)))
+
 all_docs_word_ids = []
 all_docs_char_ids = []
 all_docs_phrase_indices = []
 all_docs_gold_phrases = []
 all_docs_phrase_length = []
+all_docs_pair_indices = []
+all_docs_pair_golds = []
 logger.info("start to load the data files with format npz...")
 # data_files_path = data_files_path[146:147]
 for file in data_files_path:
-    doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase = load_data(file)
+    doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, pair_indices, pair_gold = load_data(file)
     if len(doc_word) == 0:
         print("skip this file (zero length document): {}".format(file))
         continue
@@ -36,6 +40,8 @@ for file in data_files_path:
     all_docs_phrase_indices.append((phrase_word))
     all_docs_phrase_length.append(phrase_word_len)
     all_docs_gold_phrases.append(gold_phrase)
+    all_docs_pair_indices.append(pair_indices)
+    all_docs_pair_golds.append(pair_gold)
 
 vocab = Vocabulary()
 vocab.load_vocab(config.path_vocabulary)
@@ -60,7 +66,9 @@ model = CorefModel(word_vocab_size=vocab.last_word_index + 1, char_vocab_size=vo
 
 model.build_graph()
 model.train_phrase_identification(word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
-                                    , all_docs_gold_phrases, all_docs_phrase_length, epoch_start=0, max_epoch_number=config.max_epoch_number)
+                                    , all_docs_gold_phrases, all_docs_phrase_length
+                                    , all_docs_pair_indices, all_docs_pair_golds
+                                    , epoch_start=0, max_epoch_number=config.max_epoch_number)
 # sess = tf.InteractiveSession()
 # sess.run(tf.global_variables_initializer())
 # print(model.gold_phrases.eval())

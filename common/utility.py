@@ -42,6 +42,8 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
     phrase_word:    shape = [num of candidate phrases, max num of words in a phrase, 2] بعد سوم ۲ عدد است: عدد اول نشان‌دهنده ترتیب جمله است که از ۱ شروع می‌شود. عدد دوم نشان‌دهنده ترتیب کلمه در جمله است که برای هر جمله از ۰ شروع می‌شود
     phrase_word_len:shape = [num of candidate phrases] تعداد کلمات داخل هر عبارت را نشان می‌دهد. کلمات اضافی داخل عبارت با مقدار [۰و۰] پر شده است
     gold_phrase:    shape = [num of candidate phrases] یک لیست باینری است. به ازای هر عبارت کاندید مشخص می‌کند که آیا در پیکره به عنوان یک عبارت برچسب خورده است یا نه
+    pair_indices:   shape = [num of candidate pairs, 2, 1] یک لیست است که اندیس عباراتی را مشخص می‌کند که با هم می‌توانند جفت شوند
+    pair_gold:      shape = [num of candidate pairs] مشخص می‌کند که آیا جفت عبارت کاندید در پیکره به عنوان هم‌مرجع برچسب خورده‌اند یا خیر
     :param input_file_name: فایل ورودی که قرار است اطلاعات آنم استخراج شود.
     :param output_file_name: فایل خروجی که قرار است لیست‌های تولید شده به صورت فشرده روی آن ذخیره شود
     :param vocab: واژگان استخراج شده
@@ -209,7 +211,9 @@ def load_data(file_name):
         phrase_word = data["phrase_word"]
         phrase_word_len = data["phrase_word_len"]
         gold_phrase = data["gold_phrase"]
-        return doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase
+        pair_indices = data["pair_indices"]
+        pair_gold = data["pair_gold"]
+        return doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, pair_indices, pair_gold
 
 
 
