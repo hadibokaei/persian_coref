@@ -259,12 +259,11 @@ class CorefModel(object):
                     self.pair_weights: current_pair_weight,
                     self.pruned_cand_pair: pruned_cand_pair
                 }
-                [_, loss, pred] = self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability], feed_dict)
+                [_, loss, pred, gold] = self.sess.run([self.final_train, self.final_loss
+                                                          , self.candidate_pair_probability, self.pair_pruned_gold], feed_dict)
 
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
-
-                gold = current_gold_pair
 
                 precision = precision_score(gold, pred) * 100
                 recall = recall_score(gold, pred) * 100
