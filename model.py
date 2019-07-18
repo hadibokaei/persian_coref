@@ -124,10 +124,8 @@ class CorefModel(object):
         self.candidate_phrase_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of candidate phrases]
 
     def add_pair_processing(self):
-        pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices), shape=[tf.shape(self.pair_rep_indices)[0], 2*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
-        print(self.phrase_rep)
-        print(self.pair_rep_indices)
-        print(pair_rep)
+        pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices)
+                              , shape=[tf.shape(self.pair_rep_indices)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
         pair_score = tf.gather_nd(self.candidate_phrase_probability, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
         pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
         pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=self.pruned_cand_pair).indices, 1)
@@ -139,7 +137,6 @@ class CorefModel(object):
 
         self.pair_pruned_rep = tf.reshape(self.pair_pruned_rep, shape=[-1, 4 *self.lstm_unit_size])
 
-        print(tf.shape(self.pair_pruned_rep))
     def add_fcn_pair(self):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.pair_pruned_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
         self.candidate_pair_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of pruned candidate pairs]
