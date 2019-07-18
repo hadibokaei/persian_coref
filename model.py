@@ -130,7 +130,7 @@ class CorefModel(object):
         pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
         pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=100).indices, 1)
 
-        pair_candidate_indices = tf.reshape(pair_candidate_indices, shape=[100,1])
+        pair_candidate_indices = tf.cast(pair_candidate_indices, tf.int64)
 
         self.pair_pruned_gold = tf.gather_nd(self.pair_gold, pair_candidate_indices) #shape=[# of pruned candidate pairs in doc]
         self.pair_min_pruned_score = tf.gather_nd(pair_min_score, pair_candidate_indices) # shape = [# of pruned candidate pairs]
