@@ -183,17 +183,13 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
 
     assert len(pair_indices) == len(pair_gold)
 
-    # if len(doc_word) < 2:
-    #     print(input_file_name)
-
-    # for i in range(len(gold_phrase)):
-    #     if gold_phrase[i] == 1:
-    #         phrase = doc_word_raw[phrase_word[i][0][0]-1][phrase_word[i][0][1]:phrase_word[i][phrase_word_len[i]-1][1]+1]
-    #         print(' '.join([x.split()[0] for x in phrase]))
+    logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{}"
+                .format(len(doc_word),len(phrase_word),np.sum(gold_phrase),len(pair_indices),np.sum(pair_gold)))
 
     np.savez_compressed(output_file_name, doc_word=doc_word
                         , doc_char=doc_char, phrase_word = phrase_word
-                        , phrase_word_len=phrase_word_len, gold_phrase=gold_phrase, pair_indices = pair_indices)
+                        , phrase_word_len=phrase_word_len, gold_phrase=gold_phrase
+                        , pair_indices = pair_indices, pair_gold = pair_gold)
 
 def pair_has_overlap(phrase1, phrase2):
     has_overlap = False
