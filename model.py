@@ -242,7 +242,7 @@ class CorefModel(object):
                 pair_weight = len(current_gold_pair)/(4*np.sum(current_gold_pair))
                 current_pair_weight = current_gold_pair*pair_weight + 1
 
-                pruned_cand_pair = len(current_gold_pair)/100
+                pruned_cand_pair = int(len(current_gold_pair)/100)
 
                 logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{} pruned pair:{}"
                             .format(len(current_word_ids), len(current_gold_phrase), np.sum(current_gold_phrase), len(current_gold_pair),
