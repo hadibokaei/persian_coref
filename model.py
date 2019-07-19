@@ -266,10 +266,10 @@ class CorefModel(object):
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
-                print(np.sum(current_gold_pair))
-                print(np.sum(gold))
-                print(np.sum(pred))
-                print(len(pred))
+                print("orig gold:{}/{} pruned gold:{}/{} pred:{}/{}"
+                      .format(np.sum(current_gold_pair), len(current_gold_pair)
+                              , np.sum(gold), len(gold)
+                              , np.sum(pred), len(pred)))
 
                 # a = pred[gold==1]
                 # print(a[:5])
