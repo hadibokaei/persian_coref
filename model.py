@@ -228,11 +228,11 @@ class CorefModel(object):
 
                 current_gold_pair = all_docs_pair_golds[batch_number]
 
-                # pair_weight = len(current_gold_pair)/(100*np.sum(current_gold_pair)) #30: Too high 15: Too low
-                pair_weight = 1
+                pair_weight = len(current_gold_pair)/(100*np.sum(current_gold_pair)) #30: Too high 15: Too low
+                # pair_weight = 1
                 current_pair_weight = current_gold_pair*pair_weight + 1
 
-                pruned_cand_pair = int(len(current_gold_pair)/10)
+                pruned_cand_pair = int(len(current_gold_pair)/100)
 
                 # logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{} pruned pair:{}"
                 #             .format(len(current_word_ids), len(current_gold_phrase), np.sum(current_gold_phrase), np.shape(all_docs_pair_indices[batch_number]),
