@@ -160,7 +160,7 @@ class CorefModel(object):
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.pair_identification_loss)
 
     def add_final_train(self):
-        self.final_loss = self.phrase_identification_loss + 5 * self.pair_identification_loss
+        self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
         self.final_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.final_loss)
 
     def train_phrase_identification(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
@@ -223,7 +223,7 @@ class CorefModel(object):
 
                 current_gold_phrase = all_docs_gold_phrases[batch_number]
 
-                phrase_weight = len(current_gold_phrase)/(4*np.sum(current_gold_phrase))
+                phrase_weight = len(current_gold_phrase)/(np.sum(current_gold_phrase))
                 current_phrase_weight = current_gold_phrase*phrase_weight + 1
 
                 current_gold_pair = all_docs_pair_golds[batch_number]
