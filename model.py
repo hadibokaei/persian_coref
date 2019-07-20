@@ -228,7 +228,7 @@ class CorefModel(object):
 
                 current_gold_pair = all_docs_pair_golds[batch_number]
 
-                pair_weight = len(current_gold_pair)/(175*np.sum(current_gold_pair)) #30: Too high 15: Too low
+                pair_weight = len(current_gold_pair)/(250*np.sum(current_gold_pair))
                 # pair_weight = 1
                 current_pair_weight = current_gold_pair*pair_weight + 1
 
