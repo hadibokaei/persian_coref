@@ -96,12 +96,12 @@ model.build_graph()
 
 model.train_phrase_identification(word_embedding, train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
                                     , train_docs_gold_phrases, train_docs_phrase_length
-                                    , epoch_start=0, max_epoch_number=2)
+                                    , epoch_start=0, max_epoch_number=50)
 
 model.train_pair_identification(word_embedding, train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
                                     , train_docs_gold_phrases, train_docs_phrase_length
                                     , train_docs_pair_indices, train_docs_pair_golds
-                                    , epoch_start=0, max_epoch_number=4)
+                                    , epoch_start=0, max_epoch_number=100)
 
 
 # sess = tf.InteractiveSession()
