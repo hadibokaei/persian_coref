@@ -131,7 +131,7 @@ class CorefModel(object):
 
     def add_pair_loss_train(self):
 
-        gold = tf.expand_dims(tf.to_float(self.pair_pruned_gold),1)
+        gold = tf.expand_dims(tf.to_float(self.pair_gold),1)
         gold_2d = tf.concat([gold,1-gold],1)
 
         pred = tf.expand_dims(self.candidate_pair_logit, 1)
