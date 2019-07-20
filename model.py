@@ -212,7 +212,7 @@ class CorefModel(object):
                 current_gold_phrase = all_docs_gold_phrases[batch_number]
                 num_posetive = np.sum(current_gold_phrase)
 
-                for i in range(20):
+                for i in range(100):
 
                     negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
                     posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
