@@ -269,16 +269,16 @@ class CorefModel(object):
 
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
-                current_char_ids = val_docs_char_ids[batch_number]
+                current_char_ids = val_docs_char_ids[doc_num]
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_doc_phrase_indices = val_docs_phrase_indices[batch_number]
-                current_doc_gold_phrases = val_docs_gold_phrases[batch_number]
-                current_doc_phrase_length = val_docs_phrase_length[batch_number]
+                current_doc_phrase_indices = val_docs_phrase_indices[doc_num]
+                current_doc_gold_phrases = val_docs_gold_phrases[doc_num]
+                current_doc_phrase_length = val_docs_phrase_length[doc_num]
 
 
-                current_doc_pair_indices = val_docs_pair_indices[batch_number]
-                current_doc_pair_gold = val_docs_pair_golds[batch_number]
+                current_doc_pair_indices = val_docs_pair_indices[doc_num]
+                current_doc_pair_gold = val_docs_pair_golds[doc_num]
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
