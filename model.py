@@ -187,9 +187,9 @@ class CorefModel(object):
                 current_doc_phrase_length = all_docs_phrase_length[batch_number][all_indices]
 
 
-                # weight = len(current_gold_phrase)/(np.sum(current_gold_phrase))
-                # current_weight = current_gold_phrase*weight + 1
-                current_weight = np.ones_like(current_doc_gold_phrases)
+                weight = len(current_doc_gold_phrases)/(np.sum(current_doc_gold_phrases))
+                current_weight = current_doc_gold_phrases*weight + 1
+                # current_weight = np.ones_like(current_doc_gold_phrases)
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
