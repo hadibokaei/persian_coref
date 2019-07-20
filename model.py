@@ -48,11 +48,8 @@ class CorefModel(object):
         self.phrase_indices     = tf.placeholder(tf.int32, shape=[None, self.max_phrase_length, 2]) #shape=[# of candidate phrases in doc, max phrase length in words, 2]
         self.gold_phrases       = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
         self.phrase_length      = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
-        self.phrase_weights     = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
         self.pair_rep_indices   = tf.placeholder(tf.int64, shape=[None, 2, 1]) #shape=[# of candidate pairs in doc, 2, 1]
         self.pair_gold          = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs in doc]
-        self.pruned_cand_pair   = tf.placeholder(tf.int32, shape=[]) #scalar
-        self.pair_weights       = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs]
 
 
     def add_word_representation(self):
@@ -113,23 +110,11 @@ class CorefModel(object):
         self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='relu')(dense_output)) # shape = [# of candidate phrases]
 
     def add_pair_processing(self):
-        pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices)
+        self.pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices)
                               , shape=[tf.shape(self.pair_rep_indices)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
-        pair_score = tf.gather_nd(self.candidate_phrase_logit, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
-        pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
-        pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=self.pruned_cand_pair).indices, 1)
-
-        pair_candidate_indices = tf.cast(pair_candidate_indices, tf.int64)
-
-        self.pair_pruned_gold = tf.gather_nd(self.pair_gold, pair_candidate_indices) #shape=[# of pruned candidate pairs in doc]
-        self.pair_min_pruned_score = tf.gather_nd(pair_min_score, pair_candidate_indices) # shape = [# of pruned candidate pairs]
-        self.pair_pruned_weights = tf.gather_nd(self.pair_weights, pair_candidate_indices) # shape = [# of pruned candidate pairs]
-        self.pair_pruned_rep = tf.gather_nd(pair_rep, pair_candidate_indices) # shape = [# of pruned candidate pairs, 4 * lstm hidden size]
-
-        self.pair_pruned_rep = tf.reshape(self.pair_pruned_rep, shape=[-1, 4 *self.lstm_unit_size])
 
     def add_fcn_pair(self):
-        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.pair_pruned_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
+        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.pair_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
         self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='relu')(dense_output)) # shape = [# of pruned candidate pairs]
 
     def add_phrase_loss_train(self):
@@ -139,8 +124,6 @@ class CorefModel(object):
 
         pred = tf.expand_dims(self.candidate_phrase_logit, 1)
         pred_2d = tf.concat([pred,1-pred],1)
-
-        w = tf.expand_dims(self.phrase_weights,1)
 
         self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
 
@@ -153,8 +136,6 @@ class CorefModel(object):
 
         pred = tf.expand_dims(self.candidate_pair_logit, 1)
         pred_2d = tf.concat([pred,1-pred],1)
-
-        w = tf.expand_dims(self.pair_pruned_weights,1)
 
         self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
 
@@ -186,11 +167,6 @@ class CorefModel(object):
                 current_doc_gold_phrases = all_docs_gold_phrases[batch_number][all_indices]
                 current_doc_phrase_length = all_docs_phrase_length[batch_number][all_indices]
 
-
-                weight = len(current_doc_gold_phrases)/(np.sum(current_doc_gold_phrases))
-                current_weight = current_doc_gold_phrases*weight + 1
-                # current_weight = np.ones_like(current_doc_gold_phrases)
-
                 feed_dict = {
                     self.word_ids: current_word_ids,
                     self.word_embedding: word_embedding,
@@ -200,7 +176,6 @@ class CorefModel(object):
                     self.phrase_indices: current_doc_phrase_indices,
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
-                    self.phrase_weights: current_weight
                 }
                 [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_logit], feed_dict)
 
@@ -248,9 +223,6 @@ class CorefModel(object):
                 current_doc_pair_indices = all_docs_pair_indices[batch_number][all_indices]
                 current_doc_pair_gold = current_gold_pair[all_indices]
 
-                pruned_cand_pair = len(all_docs_pair_indices[batch_number])/100
-
-
                 feed_dict = {
                     self.word_ids: current_word_ids,
                     self.word_embedding: word_embedding,
@@ -260,11 +232,8 @@ class CorefModel(object):
                     self.phrase_indices: current_doc_phrase_indices,
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
-                    self.phrase_weights: np.ones_like(current_doc_gold_phrases),
                     self.pair_gold: current_doc_pair_gold,
                     self.pair_rep_indices: current_doc_pair_indices,
-                    self.pair_weights: np.ones_like(current_doc_pair_gold),
-                    self.pruned_cand_pair: pruned_cand_pair
                 }
                 [_, loss, pred] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
                                                           , self.candidate_pair_logit], feed_dict)
