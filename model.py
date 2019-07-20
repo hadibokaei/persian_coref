@@ -3,6 +3,7 @@ from  common.utility import pad_sequences, logger
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score
 from itertools import product
+import random
 
 class CorefModel(object):
 
@@ -168,16 +169,28 @@ class CorefModel(object):
         for epoch in range(epoch_start, max_epoch_number):
             for batch_number in range(len(all_docs_word_ids)):
                 current_word_ids = all_docs_word_ids[batch_number]
-
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
                 current_char_ids = all_docs_char_ids[batch_number]
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
                 current_gold_phrase = all_docs_gold_phrases[batch_number]
-                weight = len(current_gold_phrase)/(np.sum(current_gold_phrase))
+                num_posetive = np.sum(current_gold_phrase)
 
-                current_weight = current_gold_phrase*weight + 1
+                negative_indices = random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive)
+                posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
+                all_indices = np.concatenate(negative_indices, posetive_indices)
+                np.random.shuffle(all_indices)
+
+                current_doc_phrase_indices = all_docs_phrase_indices[batch_number][all_indices]
+                current_doc_gold_phrases = all_docs_gold_phrases[batch_number][all_indices]
+                current_doc_phrase_length = all_docs_phrase_length[batch_number][all_indices]
+
+
+                # weight = len(current_gold_phrase)/(np.sum(current_gold_phrase))
+                # current_weight = current_gold_phrase*weight + 1
+
+                current_weight = 1
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
@@ -185,9 +198,9 @@ class CorefModel(object):
                     self.sentence_length: current_sentence_length,
                     self.char_ids: current_char_ids,
                     self.word_length: current_word_length,
-                    self.phrase_indices: all_docs_phrase_indices[batch_number],
-                    self.gold_phrases: current_gold_phrase,
-                    self.phrase_length: all_docs_phrase_length[batch_number],
+                    self.phrase_indices: current_doc_phrase_indices,
+                    self.gold_phrases: current_doc_gold_phrases,
+                    self.phrase_length: current_doc_phrase_length,
                     self.phrase_weights: current_weight
                 }
                 [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_logit], feed_dict)
@@ -195,7 +208,7 @@ class CorefModel(object):
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
 
-                gold = all_docs_gold_phrases[batch_number]
+                gold = current_doc_gold_phrases
 
                 precision = precision_score(gold, pred) * 100
                 recall = recall_score(gold, pred) * 100
