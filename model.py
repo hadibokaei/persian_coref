@@ -142,7 +142,7 @@ class CorefModel(object):
 
         w = tf.expand_dims(self.phrase_weights,1)
 
-        self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, w)
+        self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
 
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.phrase_identification_loss)
 
