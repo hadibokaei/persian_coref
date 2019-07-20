@@ -98,10 +98,14 @@ model.train_phrase_identification(word_embedding, train_docs_word_ids, train_doc
                                     , train_docs_gold_phrases, train_docs_phrase_length
                                     , epoch_start=0, max_epoch_number=50)
 
-model.train_pair_identification(word_embedding, train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
-                                    , train_docs_gold_phrases, train_docs_phrase_length
-                                    , train_docs_pair_indices, train_docs_pair_golds
-                                    , epoch_start=0, max_epoch_number=100)
+model.train_pair_identification(word_embedding
+                                , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
+                                , train_docs_gold_phrases, train_docs_phrase_length
+                                , train_docs_pair_indices, train_docs_pair_golds
+                                , val_docs_word_ids, val_docs_char_ids, val_docs_phrase_indices
+                                , val_docs_gold_phrases, val_docs_phrase_length
+                                , val_docs_pair_indices, val_docs_pair_golds
+                                , epoch_start=0, max_epoch_number=100)
 
 
 # sess = tf.InteractiveSession()

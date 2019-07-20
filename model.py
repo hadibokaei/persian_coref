@@ -196,31 +196,35 @@ class CorefModel(object):
                 # b = pred[all_docs_gold_phrases[batch_number]==0]
                 # print(b[:5])
 
-    def train_pair_identification(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
-              , all_docs_gold_phrases, all_docs_phrase_length
-              , all_docs_pair_indices, all_docs_pair_golds
-              , epoch_start, max_epoch_number):
+    def train_pair_identification(self, word_embedding
+                                  , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
+                                  , train_docs_gold_phrases, train_docs_phrase_length
+                                  , train_docs_pair_indices, train_docs_pair_golds
+                                  , val_docs_word_ids, val_docs_char_ids, val_docs_phrase_indices
+                                  , val_docs_gold_phrases, val_docs_phrase_length
+                                  , val_docs_pair_indices, val_docs_pair_golds
+                                  , epoch_start, max_epoch_number):
         for epoch in range(epoch_start, max_epoch_number):
-            for batch_number in range(len(all_docs_word_ids)):
-                current_word_ids = all_docs_word_ids[batch_number]
+            for batch_number in range(len(train_docs_word_ids)):
+                current_word_ids = train_docs_word_ids[batch_number]
 
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
-                current_char_ids = all_docs_char_ids[batch_number]
+                current_char_ids = train_docs_char_ids[batch_number]
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_doc_phrase_indices = all_docs_phrase_indices[batch_number]
-                current_doc_gold_phrases = all_docs_gold_phrases[batch_number]
-                current_doc_phrase_length = all_docs_phrase_length[batch_number]
+                current_doc_phrase_indices = train_docs_phrase_indices[batch_number]
+                current_doc_gold_phrases = train_docs_gold_phrases[batch_number]
+                current_doc_phrase_length = train_docs_phrase_length[batch_number]
 
 
-                current_gold_pair = all_docs_pair_golds[batch_number]
+                current_gold_pair = train_docs_pair_golds[batch_number]
                 posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
                 negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=len(posetive_indices)))
                 all_indices = np.concatenate([negative_indices, posetive_indices])
                 np.random.shuffle(all_indices)
 
-                current_doc_pair_indices = all_docs_pair_indices[batch_number][all_indices]
+                current_doc_pair_indices = train_docs_pair_indices[batch_number][all_indices]
                 current_doc_pair_gold = current_gold_pair[all_indices]
 
                 feed_dict = {
@@ -260,32 +264,46 @@ class CorefModel(object):
                 # b = pred[gold==0]
                 # print(b[:5])
 
+            for doc_num in range(len(val_docs_word_ids)):
+                current_word_ids = val_docs_word_ids[doc_num]
 
-# phrase_rep = tf.constant([[1,2,3],[2,3,4],[3,4,5],[4,5,6]])
-# pair_rep_indices = tf.constant([[[0],[1]],[[0],[2]],[[0],[3]],[[1],[2]],[[1],[3]],[[2],[3]]])
-# pair_gold = tf.constant([0,0,1,0,0,1])
-# phrase_scores = tf.constant([3,1,4,5])
-#
-# pair_rep = tf.reshape(tf.gather_nd(phrase_rep, pair_rep_indices), shape=[6,6])
-# pair_score = tf.gather_nd(phrase_scores, pair_rep_indices)
-# pair_min_score = tf.reduce_min(pair_score,axis = 1)
-#
-# pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=4).indices, 1)
-#
-#
-#
-# pair_pruned_rep = tf.gather_nd(pair_rep, pair_candidate_indices)
-# pair_pruned_gold = tf.gather_nd(pair_gold, pair_candidate_indices)
-# pair_min_pruned_score = tf.gather_nd(pair_min_score, pair_candidate_indices)
-#
-# pair_rep.eval()
-# pair_score.eval()
-# pair_min_score.eval()
-# pair_candidate_indices.eval()
-#
-# pair_pruned_rep.eval()
-# pair_pruned_gold.eval()
-# pair_min_pruned_score.eval()
+                current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
+
+                current_char_ids = val_docs_char_ids[batch_number]
+                current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
+
+                current_doc_phrase_indices = val_docs_phrase_indices[batch_number]
+                current_doc_gold_phrases = val_docs_gold_phrases[batch_number]
+                current_doc_phrase_length = val_docs_phrase_length[batch_number]
+
+
+                current_doc_pair_indices = val_docs_pair_indices[batch_number]
+                current_doc_pair_gold = val_docs_pair_golds[batch_number]
+
+                feed_dict = {
+                    self.word_ids: current_word_ids,
+                    self.word_embedding: word_embedding,
+                    self.sentence_length: current_sentence_length,
+                    self.char_ids: current_char_ids,
+                    self.word_length: current_word_length,
+                    self.phrase_indices: current_doc_phrase_indices,
+                    self.gold_phrases: current_doc_gold_phrases,
+                    self.phrase_length: current_doc_phrase_length,
+                    self.pair_gold: current_doc_pair_gold,
+                    self.pair_rep_indices: current_doc_pair_indices,
+                }
+                [pred] = self.sess.run([self.candidate_pair_logit], feed_dict)
+
+                pred[pred > 0.5] = 1
+                pred[pred <= 0.5] = 0
+
+                gold = current_doc_pair_gold
+
+                precision = precision_score(gold, pred) * 100
+                recall = recall_score(gold, pred) * 100
+                f1_measure = f1_score(gold, pred) * 100
+                logger.info("val:{:3d} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
+                            .format(doc_num, precision, recall, f1_measure))
 
 
 
