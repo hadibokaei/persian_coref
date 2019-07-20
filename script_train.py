@@ -65,14 +65,14 @@ model = CorefModel(word_vocab_size=vocab.last_word_index + 1, char_vocab_size=vo
                    , lstm_unit_size=config.lstm_hidden_size, max_phrase_length=config.phrase_max_size, dir_tensoboard_log = config.path_tensorboard)
 
 model.build_graph()
-model.train_pair_identification(word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
-                                    , all_docs_gold_phrases, all_docs_phrase_length
-                                    , all_docs_pair_indices, all_docs_pair_golds
-                                    , epoch_start=0, max_epoch_number=config.max_epoch_number)
-
-# model.train_phrase_identification(word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
+# model.train_pair_identification(word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
 #                                     , all_docs_gold_phrases, all_docs_phrase_length
+#                                     , all_docs_pair_indices, all_docs_pair_golds
 #                                     , epoch_start=0, max_epoch_number=config.max_epoch_number)
+
+model.train_phrase_identification(word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
+                                    , all_docs_gold_phrases, all_docs_phrase_length
+                                    , epoch_start=0, max_epoch_number=config.max_epoch_number)
 
 # sess = tf.InteractiveSession()
 # sess.run(tf.global_variables_initializer())

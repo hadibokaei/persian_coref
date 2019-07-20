@@ -214,6 +214,7 @@ class CorefModel(object):
                 f1_measure = f1_score(gold, pred) * 100
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
+                print(pred)
 
 
                 # a = pred[all_docs_gold_phrases[batch_number]==1]
