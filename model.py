@@ -249,6 +249,7 @@ class CorefModel(object):
                 current_doc_pair_indices = all_docs_pair_indices[batch_number][all_indices]
                 current_doc_pair_gold = current_gold_pair[all_indices]
 
+                pruned_cand_pair = len(all_docs_pair_indices[batch_number])/100
 
 
                 feed_dict = {
@@ -264,7 +265,7 @@ class CorefModel(object):
                     self.pair_gold: current_doc_pair_gold,
                     self.pair_rep_indices: current_doc_pair_indices,
                     self.pair_weights: np.ones_like(current_doc_pair_gold),
-                    self.pruned_cand_pair: len(current_doc_pair_gold)
+                    self.pruned_cand_pair: pruned_cand_pair
                 }
                 [_, loss, pred] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
                                                           , self.candidate_pair_logit], feed_dict)
