@@ -189,8 +189,9 @@ class CorefModel(object):
 
                 # weight = len(current_gold_phrase)/(np.sum(current_gold_phrase))
 
-                weight = 0
-                current_weight = current_gold_phrase*weight + 1
+                # weight = 0
+                # current_weight = current_gold_phrase*weight + 1
+                current_weight = np.ones_like(current_gold_phrase)
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
