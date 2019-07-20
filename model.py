@@ -220,7 +220,7 @@ class CorefModel(object):
                 # b = pred[all_docs_gold_phrases[batch_number]==0]
                 # print(b[:5])
 
-    def train(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
+    def train_pair_identification(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
               , all_docs_gold_phrases, all_docs_phrase_length
               , all_docs_pair_indices, all_docs_pair_golds
               , epoch_start, max_epoch_number):
@@ -264,11 +264,13 @@ class CorefModel(object):
                     self.pair_weights: np.ones_like(current_doc_pair_gold),
                     self.pruned_cand_pair: len(current_doc_pair_gold)
                 }
-                [_, loss, pred, gold] = self.sess.run([self.final_train, self.final_loss
-                                                          , self.candidate_pair_logit, self.pair_pruned_gold], feed_dict)
+                [_, loss, pred] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
+                                                          , self.candidate_pair_logit], feed_dict)
 
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
+
+                gold = current_doc_pair_gold
 
                 precision = precision_score(gold, pred) * 100
                 recall = recall_score(gold, pred) * 100
