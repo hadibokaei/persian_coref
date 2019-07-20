@@ -179,7 +179,7 @@ class CorefModel(object):
 
                 negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
                 posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
-                all_indices = np.concatenate(negative_indices, posetive_indices)
+                all_indices = np.concatenate([negative_indices, posetive_indices])
                 np.random.shuffle(all_indices)
 
                 current_doc_phrase_indices = all_docs_phrase_indices[batch_number][all_indices]
