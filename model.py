@@ -158,7 +158,7 @@ class CorefModel(object):
 
         self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
 
-        self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.01).minimize(self.pair_identification_loss)
+        self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.0001).minimize(self.pair_identification_loss)
 
     def add_final_train(self):
         self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
@@ -214,6 +214,7 @@ class CorefModel(object):
                 f1_measure = f1_score(gold, pred) * 100
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
+
 
                 # a = pred[all_docs_gold_phrases[batch_number]==1]
                 # print(a[:5])
@@ -277,6 +278,8 @@ class CorefModel(object):
                 f1_measure = f1_score(gold, pred) * 100
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
+
+                print(pred)
 
                 # print("orig gold:{}/{} pruned gold:{}/{} pred:{}/{}"
                 #       .format(np.sum(current_gold_pair), len(current_gold_pair)
