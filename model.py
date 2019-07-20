@@ -109,12 +109,12 @@ class CorefModel(object):
 
     def add_fcn_phrase(self):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
-        self.candidate_phrase_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of candidate phrases]
+        self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='relu')(dense_output)) # shape = [# of candidate phrases]
 
     def add_pair_processing(self):
         pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices)
                               , shape=[tf.shape(self.pair_rep_indices)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
-        pair_score = tf.gather_nd(self.candidate_phrase_probability, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
+        pair_score = tf.gather_nd(self.candidate_phrase_logit, self.pair_rep_indices) # shape = [# of candidate pairs, 2]
         pair_min_score = tf.reduce_min(pair_score, axis=1) # shape = [# of candidate pairs]
         pair_candidate_indices = tf.expand_dims(tf.math.top_k(pair_min_score, k=self.pruned_cand_pair).indices, 1)
 
@@ -129,14 +129,14 @@ class CorefModel(object):
 
     def add_fcn_pair(self):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.pair_pruned_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
-        self.candidate_pair_probability = tf.squeeze(tf.keras.layers.Dense(1, activation='sigmoid')(dense_output)) # shape = [# of pruned candidate pairs]
+        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='relu')(dense_output)) # shape = [# of pruned candidate pairs]
 
     def add_phrase_loss_train(self):
 
         gold = tf.expand_dims(tf.to_float(self.gold_phrases),1)
         gold_2d = tf.concat([gold,1-gold],1)
 
-        pred = tf.expand_dims(self.candidate_phrase_probability,1)
+        pred = tf.expand_dims(self.candidate_phrase_logit, 1)
         pred_2d = tf.concat([pred,1-pred],1)
 
         w = tf.expand_dims(self.phrase_weights,1)
@@ -150,7 +150,7 @@ class CorefModel(object):
         gold = tf.expand_dims(tf.to_float(self.pair_pruned_gold),1)
         gold_2d = tf.concat([gold,1-gold],1)
 
-        pred = tf.expand_dims(self.candidate_pair_probability,1)
+        pred = tf.expand_dims(self.candidate_pair_logit, 1)
         pred_2d = tf.concat([pred,1-pred],1)
 
         w = tf.expand_dims(self.pair_pruned_weights,1)
@@ -160,7 +160,7 @@ class CorefModel(object):
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.pair_identification_loss)
 
     def add_final_train(self):
-        self.final_loss = self.phrase_identification_loss + 5* self.pair_identification_loss
+        self.final_loss = self.phrase_identification_loss + 5 * self.pair_identification_loss
         self.final_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.final_loss)
 
     def train_phrase_identification(self, word_embedding, all_docs_word_ids, all_docs_char_ids, all_docs_phrase_indices
@@ -190,7 +190,7 @@ class CorefModel(object):
                     self.phrase_length: all_docs_phrase_length[batch_number],
                     self.phrase_weights: current_weight
                 }
-                [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
+                [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_logit], feed_dict)
 
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
@@ -255,7 +255,7 @@ class CorefModel(object):
                     self.pruned_cand_pair: pruned_cand_pair
                 }
                 [_, loss, pred, gold] = self.sess.run([self.final_train, self.final_loss
-                                                          , self.candidate_pair_probability, self.pair_pruned_gold], feed_dict)
+                                                          , self.candidate_pair_logit, self.pair_pruned_gold], feed_dict)
 
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
