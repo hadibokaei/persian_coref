@@ -156,7 +156,7 @@ class CorefModel(object):
 
         w = tf.expand_dims(self.pair_pruned_weights,1)
 
-        self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, w)
+        self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.pair_identification_loss)
 
@@ -234,21 +234,27 @@ class CorefModel(object):
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
                 current_gold_phrase = all_docs_gold_phrases[batch_number]
+                num_posetive = np.sum(current_gold_phrase)
 
-                phrase_weight = len(current_gold_phrase)/(np.sum(current_gold_phrase))
-                current_phrase_weight = current_gold_phrase*phrase_weight + 1
+                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
+                posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
+                all_indices = np.concatenate([negative_indices, posetive_indices])
+                np.random.shuffle(all_indices)
+
+                current_doc_phrase_indices = all_docs_phrase_indices[batch_number][all_indices]
+                current_doc_gold_phrases = all_docs_gold_phrases[batch_number][all_indices]
+                current_doc_phrase_length = all_docs_phrase_length[batch_number][all_indices]
+
 
                 current_gold_pair = all_docs_pair_golds[batch_number]
+                posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
+                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=len(posetive_indices)))
+                all_indices = np.concatenate([negative_indices, posetive_indices])
+                np.random.shuffle(all_indices)
 
-                pair_weight = len(current_gold_pair)/(np.sum(current_gold_pair))
-                # pair_weight = 1
-                current_pair_weight = current_gold_pair*pair_weight + 1
+                current_doc_pair_indices = all_docs_pair_indices[batch_number][all_indices]
+                current_doc_pair_gold = current_gold_pair[all_indices]
 
-                pruned_cand_pair = int(len(current_gold_pair)/100)
-
-                # logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{} pruned pair:{}"
-                #             .format(len(current_word_ids), len(current_gold_phrase), np.sum(current_gold_phrase), np.shape(all_docs_pair_indices[batch_number]),
-                #                     np.sum(current_gold_pair), pruned_cand_pair))
 
 
                 feed_dict = {
@@ -257,14 +263,14 @@ class CorefModel(object):
                     self.sentence_length: current_sentence_length,
                     self.char_ids: current_char_ids,
                     self.word_length: current_word_length,
-                    self.phrase_indices: all_docs_phrase_indices[batch_number],
-                    self.gold_phrases: current_gold_phrase,
-                    self.phrase_length: all_docs_phrase_length[batch_number],
-                    self.phrase_weights: current_phrase_weight,
-                    self.pair_gold: current_gold_pair,
-                    self.pair_rep_indices: all_docs_pair_indices[batch_number],
-                    self.pair_weights: current_pair_weight,
-                    self.pruned_cand_pair: pruned_cand_pair
+                    self.phrase_indices: current_doc_phrase_indices,
+                    self.gold_phrases: current_doc_gold_phrases,
+                    self.phrase_length: current_doc_phrase_length,
+                    self.phrase_weights: np.ones_like(current_doc_gold_phrases),
+                    self.pair_gold: current_doc_pair_gold,
+                    self.pair_rep_indices: current_doc_pair_indices,
+                    self.pair_weights: np.ones_like(current_doc_pair_gold),
+                    self.pruned_cand_pair: len(current_doc_pair_gold)
                 }
                 [_, loss, pred, gold] = self.sess.run([self.final_train, self.final_loss
                                                           , self.candidate_pair_logit, self.pair_pruned_gold], feed_dict)
