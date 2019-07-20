@@ -233,17 +233,9 @@ class CorefModel(object):
                 current_char_ids = all_docs_char_ids[batch_number]
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_gold_phrase = all_docs_gold_phrases[batch_number]
-                num_posetive = np.sum(current_gold_phrase)
-
-                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
-                posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
-                all_indices = np.concatenate([negative_indices, posetive_indices])
-                np.random.shuffle(all_indices)
-
-                current_doc_phrase_indices = all_docs_phrase_indices[batch_number][all_indices]
-                current_doc_gold_phrases = all_docs_gold_phrases[batch_number][all_indices]
-                current_doc_phrase_length = all_docs_phrase_length[batch_number][all_indices]
+                current_doc_phrase_indices = all_docs_phrase_indices[batch_number]
+                current_doc_gold_phrases = all_docs_gold_phrases[batch_number]
+                current_doc_phrase_length = all_docs_phrase_length[batch_number]
 
 
                 current_gold_pair = all_docs_pair_golds[batch_number]
