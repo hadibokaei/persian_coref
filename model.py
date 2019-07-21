@@ -294,7 +294,7 @@ class CorefModel(object):
                     self.pair_gold: current_doc_pair_gold,
                     self.pair_rep_indices: current_doc_pair_indices,
                 }
-                [pred] = self.sess.run([self.candidate_pair_logit], feed_dict)
+                [pred] = self.sess.run([self.candidate_pair_probability], feed_dict)
 
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
