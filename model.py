@@ -237,18 +237,21 @@ class CorefModel(object):
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
                 }
-                [pred] = self.sess.run([self.candidate_phrase_probability], feed_dict)
+                try:
+                    [pred] = self.sess.run([self.candidate_phrase_probability], feed_dict)
 
-                pred[pred > 0.5] = 1
-                pred[pred <= 0.5] = 0
+                    pred[pred > 0.5] = 1
+                    pred[pred <= 0.5] = 0
 
-                gold = current_doc_gold_phrases
+                    gold = current_doc_gold_phrases
 
-                precision = precision_score(gold, pred) * 100
-                recall = recall_score(gold, pred) * 100
-                f1_measure = f1_score(gold, pred) * 100
-                logger.info("val:{:3d} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
-                            .format(doc_num, precision, recall, f1_measure))
+                    precision = precision_score(gold, pred) * 100
+                    recall = recall_score(gold, pred) * 100
+                    f1_measure = f1_score(gold, pred) * 100
+                    logger.info("val:{:3d} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
+                                .format(doc_num, precision, recall, f1_measure))
+                except Exception as e:
+                    print(e)
 
 
 
