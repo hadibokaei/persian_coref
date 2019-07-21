@@ -197,23 +197,15 @@ class CorefModel(object):
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
             for doc_num in range(len(val_docs_word_ids)):
-                current_word_ids = train_docs_word_ids[batch_number]
+                current_word_ids = val_docs_word_ids[doc_num]
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
-                current_char_ids = train_docs_char_ids[batch_number]
+                current_char_ids = val_docs_char_ids[doc_num]
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_gold_phrase = train_docs_gold_phrases[batch_number]
-                num_posetive = np.sum(current_gold_phrase)
-
-                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
-                posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
-                all_indices = np.concatenate([negative_indices, posetive_indices])
-                np.random.shuffle(all_indices)
-
-                current_doc_phrase_indices = train_docs_phrase_indices[batch_number][all_indices]
-                current_doc_gold_phrases = train_docs_gold_phrases[batch_number][all_indices]
-                current_doc_phrase_length = train_docs_phrase_length[batch_number][all_indices]
+                current_doc_phrase_indices = val_docs_phrase_indices[doc_num]
+                current_doc_gold_phrases = val_docs_gold_phrases[doc_num]
+                current_doc_phrase_length = val_docs_phrase_length[doc_num]
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
