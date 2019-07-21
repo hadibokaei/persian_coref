@@ -16,8 +16,10 @@ for file_name in listdir(config.path_data_train):
     if isdir(file_path):
         data_files_path += get_all_files(file_path, '.npz')
 
+data_files_path = data_files_path[:20]
+
 num_files = len(data_files_path)
-num_train_file = int(0.995*num_files)
+num_train_file = int(0.8*num_files)
 num_validation_file = num_files - num_train_file
 logger.info("{} number of files found: {} train and {} validation".format(num_files, num_train_file, num_validation_file))
 
@@ -98,13 +100,21 @@ model.train_phrase_identification(word_embedding, train_docs_word_ids, train_doc
                                     , train_docs_gold_phrases, train_docs_phrase_length
                                     , epoch_start=0, max_epoch_number=10)
 
+# model.train_pair_identification(word_embedding
+#                                 , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
+#                                 , train_docs_gold_phrases, train_docs_phrase_length
+#                                 , train_docs_pair_indices, train_docs_pair_golds
+#                                 , val_docs_word_ids, val_docs_char_ids, val_docs_phrase_indices
+#                                 , val_docs_gold_phrases, val_docs_phrase_length
+#                                 , val_docs_pair_indices, val_docs_pair_golds
+#                                 , epoch_start=0, max_epoch_number=100)
 model.train_pair_identification(word_embedding
                                 , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
                                 , train_docs_gold_phrases, train_docs_phrase_length
                                 , train_docs_pair_indices, train_docs_pair_golds
-                                , val_docs_word_ids, val_docs_char_ids, val_docs_phrase_indices
-                                , val_docs_gold_phrases, val_docs_phrase_length
-                                , val_docs_pair_indices, val_docs_pair_golds
+                                , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
+                                , train_docs_gold_phrases, train_docs_phrase_length
+                                , train_docs_pair_indices, train_docs_pair_golds
                                 , epoch_start=0, max_epoch_number=100)
 
 
