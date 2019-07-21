@@ -188,18 +188,21 @@ class CorefModel(object):
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
                 }
-                [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
+                try:
+                    [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
+                    pred[pred > 0.5] = 1
+                    pred[pred <= 0.5] = 0
 
-                pred[pred > 0.5] = 1
-                pred[pred <= 0.5] = 0
+                    gold = current_doc_gold_phrases
 
-                gold = current_doc_gold_phrases
+                    precision = precision_score(gold, pred) * 100
+                    recall = recall_score(gold, pred) * 100
+                    f1_measure = f1_score(gold, pred) * 100
+                    logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
+                                .format(epoch, batch_number, loss, precision, recall, f1_measure))
+                except Exception as e:
+                    print(e)
 
-                precision = precision_score(gold, pred) * 100
-                recall = recall_score(gold, pred) * 100
-                f1_measure = f1_score(gold, pred) * 100
-                logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
-                            .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
             for doc_num in range(len(validation_files_path)):
 
