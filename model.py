@@ -106,8 +106,8 @@ class CorefModel(object):
             self.phrase_rep = tf.concat([output_fw, output_bw], axis=-1) # shape = [# of candidate phrases, 2 * lstm hidden size]
 
     def add_fcn_phrase(self):
-        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
-        self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='relu')(dense_output)) # shape = [# of candidate phrases]
+        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
+        self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dense_output)) # shape = [# of candidate phrases]
         self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
 
     def add_pair_processing(self):
@@ -115,8 +115,8 @@ class CorefModel(object):
                               , shape=[tf.shape(self.pair_rep_indices)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
 
     def add_fcn_pair(self):
-        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.pair_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
-        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='relu')(dense_output)) # shape = [# of pruned candidate pairs]
+        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(self.pair_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
+        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dense_output)) # shape = [# of pruned candidate pairs]
         self.candidate_pair_probability = tf.math.sigmoid(self.candidate_pair_logit)
 
     def add_phrase_loss_train(self):
