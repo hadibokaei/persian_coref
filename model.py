@@ -108,6 +108,7 @@ class CorefModel(object):
     def add_fcn_phrase(self):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
         self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='relu')(dense_output)) # shape = [# of candidate phrases]
+        self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
 
     def add_pair_processing(self):
         self.pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices)
@@ -116,6 +117,7 @@ class CorefModel(object):
     def add_fcn_pair(self):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='relu')(self.pair_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
         self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='relu')(dense_output)) # shape = [# of pruned candidate pairs]
+        self.candidate_pair_probability = tf.math.sigmoid(self.candidate_pair_logit)
 
     def add_phrase_loss_train(self):
 
@@ -177,7 +179,7 @@ class CorefModel(object):
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
                 }
-                [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_logit], feed_dict)
+                [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
 
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
@@ -240,7 +242,7 @@ class CorefModel(object):
                     self.pair_rep_indices: current_doc_pair_indices,
                 }
                 [_, loss, pred] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
-                                                          , self.candidate_pair_logit], feed_dict)
+                                                          , self.candidate_pair_probability], feed_dict)
 
                 print(pred)
                 pred[pred > 0.5] = 1
