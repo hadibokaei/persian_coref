@@ -1,25 +1,19 @@
 from model import CorefModel
-import tensorflow as tf
 from common.utility import get_all_files, logger, load_data
 from common.vocabulary import Vocabulary
 from os import listdir
 from os.path import isdir, isfile, join
 from common import config
-import numpy as np
-
 
 data_files_path = []
-
 data_files_path += get_all_files(config.path_data_train, '.npz')
 for file_name in listdir(config.path_data_train):
     file_path = join(config.path_data_train, file_name)
     if isdir(file_path):
         data_files_path += get_all_files(file_path, '.npz')
 
-data_files_path = data_files_path[:20]
-
 num_files = len(data_files_path)
-num_train_file = int(0.8*num_files)
+num_train_file = int(0.99*num_files)
 num_validation_file = num_files - num_train_file
 train_files_path = data_files_path[:num_train_file]
 validation_files_path = data_files_path[num_train_file+1:]
