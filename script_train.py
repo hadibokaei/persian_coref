@@ -21,57 +21,10 @@ data_files_path = data_files_path[:20]
 num_files = len(data_files_path)
 num_train_file = int(0.8*num_files)
 num_validation_file = num_files - num_train_file
+train_files_path = data_files_path[:num_train_file]
+validation_files_path = data_files_path[num_train_file+1:]
+
 logger.info("{} number of files found: {} train and {} validation".format(num_files, num_train_file, num_validation_file))
-
-train_docs_word_ids = []
-train_docs_char_ids = []
-train_docs_phrase_indices = []
-train_docs_gold_phrases = []
-train_docs_phrase_length = []
-train_docs_pair_indices = []
-train_docs_pair_golds = []
-logger.info("start to load the train data files with format npz...")
-for train_counter in range(num_train_file):
-    file = data_files_path[train_counter]
-    doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, pair_indices, pair_gold = load_data(file)
-    if len(doc_word) == 0:
-        print("skip this file (zero length document): {}".format(file))
-        continue
-    if np.sum(gold_phrase) == 0:
-        print("skip this file (no phrase): {}".format(file))
-        continue
-    train_docs_word_ids.append(doc_word)
-    train_docs_char_ids.append(doc_char)
-    train_docs_phrase_indices.append((phrase_word))
-    train_docs_phrase_length.append(phrase_word_len)
-    train_docs_gold_phrases.append(gold_phrase)
-    train_docs_pair_indices.append(pair_indices)
-    train_docs_pair_golds.append(pair_gold)
-
-val_docs_word_ids = []
-val_docs_char_ids = []
-val_docs_phrase_indices = []
-val_docs_gold_phrases = []
-val_docs_phrase_length = []
-val_docs_pair_indices = []
-val_docs_pair_golds = []
-logger.info("start to load the validation data files with format npz...")
-for val_counter in range(num_train_file, num_files):
-    file = data_files_path[val_counter]
-    doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, pair_indices, pair_gold = load_data(file)
-    if len(doc_word) == 0:
-        print("skip this file (zero length document): {}".format(file))
-        continue
-    if np.sum(gold_phrase) == 0:
-        print("skip this file (no phrase): {}".format(file))
-        continue
-    val_docs_word_ids.append(doc_word)
-    val_docs_char_ids.append(doc_char)
-    val_docs_phrase_indices.append((phrase_word))
-    val_docs_phrase_length.append(phrase_word_len)
-    val_docs_gold_phrases.append(gold_phrase)
-    val_docs_pair_indices.append(pair_indices)
-    val_docs_pair_golds.append(pair_gold)
 
 vocab = Vocabulary()
 vocab.load_vocab(config.path_vocabulary)
@@ -96,29 +49,9 @@ model = CorefModel(word_vocab_size=vocab.last_word_index + 1, char_vocab_size=vo
 
 model.build_graph()
 
-model.train_phrase_identification(word_embedding
-                                  , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
-                                  , train_docs_gold_phrases, train_docs_phrase_length
-                                  , val_docs_word_ids, val_docs_char_ids, val_docs_phrase_indices
-                                  , val_docs_gold_phrases, val_docs_phrase_length
-                                  , epoch_start=0, max_epoch_number=40)
+model.train_phrase_identification(word_embedding, train_files_path, validation_files_path, epoch_start=0, max_epoch_number=40)
 
-# model.train_pair_identification(word_embedding
-#                                 , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
-#                                 , train_docs_gold_phrases, train_docs_phrase_length
-#                                 , train_docs_pair_indices, train_docs_pair_golds
-#                                 , val_docs_word_ids, val_docs_char_ids, val_docs_phrase_indices
-#                                 , val_docs_gold_phrases, val_docs_phrase_length
-#                                 , val_docs_pair_indices, val_docs_pair_golds
-#                                 , epoch_start=0, max_epoch_number=100)
-model.train_pair_identification(word_embedding
-                                , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
-                                , train_docs_gold_phrases, train_docs_phrase_length
-                                , train_docs_pair_indices, train_docs_pair_golds
-                                , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
-                                , train_docs_gold_phrases, train_docs_phrase_length
-                                , train_docs_pair_indices, train_docs_pair_golds
-                                , epoch_start=0, max_epoch_number=100)
+# model.train_pair_identification(word_embedding, train_files_path, validation_files_path, epoch_start=0, max_epoch_number=100)
 
 
 # sess = tf.InteractiveSession()

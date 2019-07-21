@@ -1,5 +1,5 @@
 import tensorflow as tf
-from  common.utility import pad_sequences, logger
+from  common.utility import pad_sequences, logger, load_data
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score
 from itertools import product
@@ -147,21 +147,26 @@ class CorefModel(object):
         self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
         self.final_train = tf.train.AdamOptimizer(learning_rate=0.01).minimize(self.final_loss)
 
-    def train_phrase_identification(self, word_embedding
-                                    , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
-                                    , train_docs_gold_phrases, train_docs_phrase_length
-                                    , val_docs_word_ids, val_docs_char_ids, val_docs_phrase_indices
-                                    , val_docs_gold_phrases, val_docs_phrase_length
-                                    , epoch_start, max_epoch_number):
+    def train_phrase_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number):
         for epoch in range(epoch_start, max_epoch_number):
-            for batch_number in range(len(train_docs_word_ids)):
-                current_word_ids = train_docs_word_ids[batch_number]
+            for batch_number in range(len(train_files_path)):
+
+                file = train_files_path[batch_number]
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
+                if len(doc_word) == 0:
+                    print("skip this file (zero length document): {}".format(file))
+                    continue
+                if np.sum(gold_phrase) == 0:
+                    print("skip this file (no phrase): {}".format(file))
+                    continue
+
+                current_word_ids = doc_word
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
-                current_char_ids = train_docs_char_ids[batch_number]
+                current_char_ids = doc_char
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_gold_phrase = train_docs_gold_phrases[batch_number]
+                current_gold_phrase = gold_phrase
                 num_posetive = np.sum(current_gold_phrase)
 
                 negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
@@ -169,9 +174,9 @@ class CorefModel(object):
                 all_indices = np.concatenate([negative_indices, posetive_indices])
                 np.random.shuffle(all_indices)
 
-                current_doc_phrase_indices = train_docs_phrase_indices[batch_number][all_indices]
-                current_doc_gold_phrases = train_docs_gold_phrases[batch_number][all_indices]
-                current_doc_phrase_length = train_docs_phrase_length[batch_number][all_indices]
+                current_doc_phrase_indices = phrase_word[all_indices]
+                current_doc_gold_phrases = gold_phrase[all_indices]
+                current_doc_phrase_length = phrase_word_len[all_indices]
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
@@ -196,16 +201,28 @@ class CorefModel(object):
                 logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
                             .format(epoch, batch_number, loss, precision, recall, f1_measure))
 
-            for doc_num in range(len(val_docs_word_ids)):
-                current_word_ids = val_docs_word_ids[doc_num]
+            for doc_num in range(len(validation_files_path)):
+
+                file = validation_files_path[doc_num]
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
+
+                if len(doc_word) == 0:
+                    print("skip this file (zero length document): {}".format(file))
+                    continue
+                if np.sum(gold_phrase) == 0:
+                    print("skip this file (no phrase): {}".format(file))
+                    continue
+
+
+                current_word_ids = doc_word
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
-                current_char_ids = val_docs_char_ids[doc_num]
+                current_char_ids = doc_char
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_doc_phrase_indices = val_docs_phrase_indices[doc_num]
-                current_doc_gold_phrases = val_docs_gold_phrases[doc_num]
-                current_doc_phrase_length = val_docs_phrase_length[doc_num]
+                current_doc_phrase_indices = phrase_word
+                current_doc_gold_phrases = gold_phrase
+                current_doc_phrase_length = phrase_word_len
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
