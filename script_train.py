@@ -98,7 +98,7 @@ model.build_graph()
 
 model.train_phrase_identification(word_embedding, train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
                                     , train_docs_gold_phrases, train_docs_phrase_length
-                                    , epoch_start=0, max_epoch_number=3)
+                                    , epoch_start=0, max_epoch_number=20)
 
 # model.train_pair_identification(word_embedding
 #                                 , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
