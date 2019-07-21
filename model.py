@@ -244,7 +244,6 @@ class CorefModel(object):
                 [_, loss, pred] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
                                                           , self.candidate_pair_probability], feed_dict)
 
-                print(pred)
                 pred[pred > 0.5] = 1
                 pred[pred <= 0.5] = 0
 
