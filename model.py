@@ -204,6 +204,9 @@ class CorefModel(object):
                     print(e)
 
 
+            all_precision = []
+            all_recall = []
+            all_f1 = []
             for doc_num in range(len(validation_files_path)):
 
                 file = validation_files_path[doc_num]
@@ -246,15 +249,19 @@ class CorefModel(object):
                     gold = current_doc_gold_phrases
 
                     precision = precision_score(gold, pred) * 100
+                    all_precision.append(precision)
                     recall = recall_score(gold, pred) * 100
+                    all_recall.append(recall)
                     f1_measure = f1_score(gold, pred) * 100
-                    logger.info("val:{:3d} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
-                                .format(doc_num, precision, recall, f1_measure))
+                    all_f1.append(f1_measure)
                 except Exception as e:
                     print(e)
 
+            avg_precision = np.average(all_precision)
+            avg_recall = np.average(all_recall)
+            avg_f1 = np.average(all_f1)
 
-
+            logger.info("epoch:{:3d} validation metrics: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
 
     def train_pair_identification(self, word_embedding
                                   , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
