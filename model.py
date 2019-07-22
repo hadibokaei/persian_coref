@@ -166,17 +166,22 @@ class CorefModel(object):
                 current_char_ids = doc_char
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_gold_phrase = gold_phrase
-                num_posetive = np.sum(current_gold_phrase)
+                # current_gold_phrase = gold_phrase
+                # num_posetive = np.sum(current_gold_phrase)
+                #
+                # negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
+                # posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
+                # all_indices = np.concatenate([negative_indices, posetive_indices])
+                # np.random.shuffle(all_indices)
+                #
+                # current_doc_phrase_indices = phrase_word[all_indices]
+                # current_doc_gold_phrases = gold_phrase[all_indices]
+                # current_doc_phrase_length = phrase_word_len[all_indices]
 
-                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
-                posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
-                all_indices = np.concatenate([negative_indices, posetive_indices])
-                np.random.shuffle(all_indices)
+                current_doc_phrase_indices = phrase_word
+                current_doc_gold_phrases = gold_phrase
+                current_doc_phrase_length = phrase_word_len
 
-                current_doc_phrase_indices = phrase_word[all_indices]
-                current_doc_gold_phrases = gold_phrase[all_indices]
-                current_doc_phrase_length = phrase_word_len[all_indices]
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
