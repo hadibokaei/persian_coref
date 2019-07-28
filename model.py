@@ -113,11 +113,11 @@ class CorefModel(object):
         self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dense_output)) # shape = [# of candidate phrases]
         self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
 
-        accuracy, _ = tf.metrics.accuracy(labels=tf.argmax(self.gold_phrases, 1), predictions=tf.argmax(self.candidate_phrase_probability, 1))
+        accuracy, _ = tf.metrics.accuracy(labels=tf.argmax(self.gold_phrases, 0), predictions=tf.argmax(self.candidate_phrase_probability, 0))
         tf.summary.scalar("accuracy", accuracy)
-        precision, _ = tf.metrics.precision(labels=tf.argmax(self.gold_phrases, 1), predictions=tf.argmax(self.candidate_phrase_probability, 1))
+        precision, _ = tf.metrics.precision(labels=tf.argmax(self.gold_phrases, 0), predictions=tf.argmax(self.candidate_phrase_probability, 0))
         tf.summary.scalar("precision", precision)
-        recall, _ = tf.metrics.recall(labels=tf.argmax(self.gold_phrases, 1), predictions=tf.argmax(self.candidate_phrase_probability, 1))
+        recall, _ = tf.metrics.recall(labels=tf.argmax(self.gold_phrases, 0), predictions=tf.argmax(self.candidate_phrase_probability, 0))
         tf.summary.scalar("recall", recall)
 
 
