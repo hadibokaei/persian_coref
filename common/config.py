@@ -20,6 +20,6 @@ phrase_max_gap = 100 # تعداد کلماتی که می‌تواند بین د�
 
 max_epoch_number = 50
 
-path_tensorboard = "tensorboard"
+path_tensorboard = "tensorboard/"
 
 lstm_hidden_size = 128

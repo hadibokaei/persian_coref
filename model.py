@@ -32,6 +32,7 @@ class CorefModel(object):
         self.add_pair_loss_train()
         self.add_final_train()
         self.initialize_session()
+        self.merged = tf.summary.merge_all()
 
     def initialize_session(self):
         self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
