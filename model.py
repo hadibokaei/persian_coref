@@ -151,8 +151,11 @@ class CorefModel(object):
         self.final_train = tf.train.AdamOptimizer(learning_rate=0.01).minimize(self.final_loss)
 
     def train_phrase_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number):
+        global_step = 0
         for epoch in range(epoch_start, max_epoch_number):
             for batch_number in range(len(train_files_path)):
+
+                global_step += 1
 
                 file = train_files_path[batch_number]
                 [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
@@ -197,7 +200,10 @@ class CorefModel(object):
                     self.phrase_length: current_doc_phrase_length,
                 }
                 try:
-                    [_, loss, pred] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss, self.candidate_phrase_probability], feed_dict)
+                    [_, loss, pred, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
+                                                                 , self.candidate_phrase_probability, self.merged], feed_dict)
+
+                    self.writer.add_summary(summary, global_step)
                     pred[pred > 0.5] = 1
                     pred[pred <= 0.5] = 0
 
