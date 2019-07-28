@@ -39,6 +39,7 @@ class CorefModel(object):
         self.sess.run(tf.global_variables_initializer())
         self.saver = tf.train.Saver(max_to_keep=10)
         self.writer = tf.summary.FileWriter(self.dir_tensoboard_log, graph=tf.get_default_graph())
+        self.writer.add_graph(graph=tf.get_default_graph())
 
     def add_placeholders(self):
         self.word_ids           = tf.placeholder(tf.int32, shape=[None, None], name="word_ids") #shape=[# of sentences in doc, max # of words in sentences]
