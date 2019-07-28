@@ -38,7 +38,8 @@ class CorefModel(object):
         self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
         self.sess.run(tf.global_variables_initializer())
         self.saver = tf.train.Saver(max_to_keep=10)
-        self.writer = tf.summary.FileWriter(self.dir_tensoboard_log, graph=tf.get_default_graph())
+        self.train_writer = tf.summary.FileWriter(self.dir_tensoboard_log + "train", graph=tf.get_default_graph())
+        self.validation_writer = tf.summary.FileWriter(self.dir_tensoboard_log + "validation", graph=tf.get_default_graph())
 
 
     def add_placeholders(self):
@@ -111,6 +112,14 @@ class CorefModel(object):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
         self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dense_output)) # shape = [# of candidate phrases]
         self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
+
+        accuracy, _ = tf.metrics.accuracy(labels=tf.argmax(self.gold_phrases, 1), predictions=tf.argmax(self.candidate_phrase_probability, 1))
+        tf.summary.scalar("accuracy", accuracy)
+        precision, _ = tf.metrics.precision(labels=tf.argmax(self.gold_phrases, 1), predictions=tf.argmax(self.candidate_phrase_probability, 1))
+        tf.summary.scalar("precision", precision)
+        recall, _ = tf.metrics.recall(labels=tf.argmax(self.gold_phrases, 1), predictions=tf.argmax(self.candidate_phrase_probability, 1))
+        tf.summary.scalar("recall", recall)
+
 
     def add_pair_processing(self):
         self.pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, self.pair_rep_indices)
@@ -203,7 +212,7 @@ class CorefModel(object):
                     [_, loss, pred, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
                                                                  , self.candidate_phrase_probability, self.merged], feed_dict)
 
-                    self.writer.add_summary(summary, global_step)
+                    self.train_writer.add_summary(summary, global_step)
                     pred[pred > 0.5] = 1
                     pred[pred <= 0.5] = 0
 
@@ -255,8 +264,9 @@ class CorefModel(object):
                     self.phrase_length: current_doc_phrase_length,
                 }
                 try:
-                    [pred] = self.sess.run([self.candidate_phrase_probability], feed_dict)
+                    [pred, summary] = self.sess.run([self.candidate_phrase_probability, self.merged], feed_dict)
 
+                    self.validation_writer.add_summary(summary, global_step)
                     pred[pred > 0.5] = 1
                     pred[pred <= 0.5] = 0
 
