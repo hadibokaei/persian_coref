@@ -39,7 +39,6 @@ class CorefModel(object):
         self.sess.run(tf.global_variables_initializer())
         self.saver = tf.train.Saver(max_to_keep=10)
         self.writer = tf.summary.FileWriter(self.dir_tensoboard_log, graph=tf.get_default_graph())
-        self.writer.add_graph(graph=tf.get_default_graph())
 
 
     def add_placeholders(self):
