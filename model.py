@@ -9,7 +9,7 @@ class CorefModel(object):
 
     def __init__(self, word_vocab_size, char_vocab_size, word_embedding_dimension, char_embedding_dimension, max_word_length, max_phrase_length
                  , conv_filter_num, conv_filter_size
-                 , lstm_unit_size, dir_tensoboard_log):
+                 , lstm_unit_size, dir_tensoboard_log, dir_checkpoint):
         self.word_vocab_size = word_vocab_size
         self.char_vocab_size = char_vocab_size
         self.word_embedding_dimension = word_embedding_dimension
@@ -96,7 +96,7 @@ class CorefModel(object):
 
         self.lstm_output = tf.concat([tf.expand_dims(tf.zeros_like(lstm_output_tmp[0]),0),lstm_output_tmp], axis = 0) # shape = [# of sentences + 1, max num of words in each sentence, 2 * lstm hidden size]
 
-        self.candidate_phrases = tf.gather_nd(self.lstm_output, self.phrase_indices) # shape = [# of candidate phrases, max phrase length, 2 * lstm hidden size
+        self.candidate_phrases = tf.gather_nd(self.lstm_output, self.phrase_indices) # shape = [# of candidate phrases, max phrase length, 2 * lstm hidden size]
 
         with tf.variable_scope('phrase_bilstm'):
             cell_fw = tf.contrib.rnn.LSTMCell(num_units=self.lstm_unit_size, state_is_tuple=True)
@@ -236,6 +236,9 @@ class CorefModel(object):
                 except Exception as e:
                     print(e)
 
+            save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
+                                        global_step=int(epoch), write_meta_graph=False)
+            self.logger.info("model is saved in: {}".format(save_path))
 
             all_precision = []
             all_recall = []

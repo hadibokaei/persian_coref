@@ -43,7 +43,7 @@ model = CorefModel(word_vocab_size=vocab.last_word_index + 1, char_vocab_size=vo
 
 model.build_graph()
 
-model.train_phrase_identification(word_embedding, train_files_path, validation_files_path, epoch_start=0, max_epoch_number=1000)
+model.train_phrase_identification(word_embedding, train_files_path[:20], validation_files_path[:5], epoch_start=0, max_epoch_number=1000)
 
 # model.train_pair_identification(word_embedding, train_files_path, validation_files_path, epoch_start=0, max_epoch_number=100)
 
