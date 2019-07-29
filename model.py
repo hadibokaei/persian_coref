@@ -55,6 +55,7 @@ class CorefModel(object):
         self.phrase_length      = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
         self.pair_rep_indices   = tf.placeholder(tf.int64, shape=[None, 2, 1]) #shape=[# of candidate pairs in doc, 2, 1]
         self.pair_gold          = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs in doc]
+        self.dropout_rate       = tf.placeholder(tf.float32, shape=[]) #shape=[# of candidate pairs in doc]
 
 
     def add_word_representation(self):
@@ -112,9 +113,9 @@ class CorefModel(object):
 
     def add_fcn_phrase(self):
 
-        dropped_rep = tf.keras.layers.Dropout(rate = 0.5)(self.phrase_rep)
+        dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.phrase_rep)
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
-        dropped_dense_output = tf.keras.layers.Dropout(rate = 0.5)(dense_output)
+        dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
         self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of candidate phrases]
         self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
 
@@ -219,6 +220,7 @@ class CorefModel(object):
                     self.phrase_indices: current_doc_phrase_indices,
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
+                    self.dropout_rate: 0.5
                 }
                 try:
                     [_, loss, pred, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
@@ -280,6 +282,7 @@ class CorefModel(object):
                     self.phrase_indices: current_doc_phrase_indices,
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
+                    self.dropout_rate: 0.0
                 }
                 try:
                     [pred, summary] = self.sess.run([self.candidate_phrase_probability, self.merged], feed_dict)
