@@ -151,7 +151,7 @@ class CorefModel(object):
         self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
         tf.summary.scalar("phrase loss", self.phrase_identification_loss)
 
-        self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.01).minimize(self.phrase_identification_loss)
+        self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.phrase_identification_loss)
 
     def add_pair_loss_train(self):
 
