@@ -113,8 +113,13 @@ class CorefModel(object):
         self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dense_output)) # shape = [# of candidate phrases]
         self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
 
-        accuracy, _ = tf.metrics.accuracy(labels=self.gold_phrases, predictions=tf.to_int32(self.candidate_phrase_probability>0.5))
+        pred = tf.to_int32(self.candidate_phrase_probability > 0.5)
+        pred_2c = tf.concat([tf.expand_dims(pred, 1), tf.expand_dims(tf.math.abs(tf.math.add(pred, -1)), 1)], axis=1)
+        gold_2c = tf.concat([tf.expand_dims(self.gold_phrases, 1), tf.expand_dims(tf.math.abs(tf.math.add(self.gold_phrases, -1)), 1)], axis=1)
+
+        accuracy, accuracy_op = tf.metrics.accuracy(labels=self.gold_phrases, predictions=tf.to_int32(self.candidate_phrase_probability>0.5))
         tf.summary.scalar("accuracy", accuracy)
+        tf.summary.scalar("accuracy_op", accuracy_op)
         # precision, _ = tf.metrics.precision(labels=tf.argmax(self.gold_phrases, 0), predictions=tf.argmax(self.candidate_phrase_probability, 0))
         # tf.summary.scalar("precision", precision)
         # recall, _ = tf.metrics.recall(labels=tf.argmax(self.gold_phrases, 0), predictions=tf.argmax(self.candidate_phrase_probability, 0))
