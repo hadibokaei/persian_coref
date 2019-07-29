@@ -111,18 +111,19 @@ class CorefModel(object):
             self.phrase_rep = tf.concat([output_fw, output_bw], axis=-1) # shape = [# of candidate phrases, 2 * lstm hidden size]
 
     def add_fcn_phrase(self):
+
+        dropped_rep = tf.keras.layers.Dropout(rate = 0.5)(self.phrase_rep)
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
-        self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dense_output)) # shape = [# of candidate phrases]
+        dropped_dense_output = tf.keras.layers.Dropout(rate = 0.5)(self.dense_output)
+        self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of candidate phrases]
         self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
 
         pred = tf.to_int32(self.candidate_phrase_probability > 0.5)
-        pred_2c = tf.concat([tf.expand_dims(pred, 1), tf.expand_dims(tf.math.abs(tf.math.add(pred, -1)), 1)], axis=1)
-        gold_2c = tf.concat([tf.expand_dims(self.gold_phrases, 1), tf.expand_dims(tf.math.abs(tf.math.add(self.gold_phrases, -1)), 1)], axis=1)
 
         with tf.name_scope('metrics'):
-            accuracy, accuracy_op = tf.metrics.accuracy(labels=self.gold_phrases, predictions=tf.to_int32(self.candidate_phrase_probability>0.5))
-            precision, precision_op = tf.metrics.precision(labels=self.gold_phrases, predictions=tf.to_int32(self.candidate_phrase_probability>0.5))
-            recall, recall_op = tf.metrics.recall(labels=self.gold_phrases, predictions=tf.to_int32(self.candidate_phrase_probability>0.5))
+            accuracy, accuracy_op = tf.metrics.accuracy(labels=self.gold_phrases, predictions=pred)
+            precision, precision_op = tf.metrics.precision(labels=self.gold_phrases, predictions=pred)
+            recall, recall_op = tf.metrics.recall(labels=self.gold_phrases, predictions=pred)
 
 
         tf.summary.scalar("accuracy", accuracy_op)
@@ -150,7 +151,7 @@ class CorefModel(object):
         self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
         tf.summary.scalar("phrase loss", self.phrase_identification_loss)
 
-        self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.phrase_identification_loss)
+        self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.01).minimize(self.phrase_identification_loss)
 
     def add_pair_loss_train(self):
 
