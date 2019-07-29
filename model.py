@@ -20,6 +20,7 @@ class CorefModel(object):
         self.lstm_unit_size = lstm_unit_size
         self.max_phrase_length = max_phrase_length
         self.dir_tensoboard_log = dir_tensoboard_log
+        self.dir_checkpoint = dir_checkpoint
 
     def build_graph(self):
         self.add_placeholders()
