@@ -312,7 +312,7 @@ class CorefModel(object):
 
     def restore_graph(self):
         self.saver.restore(self.sess, tf.train.latest_checkpoint(self.dir_checkpoint))
-        return tf.train.latest_checkpoint(self.cfg.dir_checkpoints)
+        return tf.train.latest_checkpoint(self.dir_checkpoint)
 
     def train_pair_identification(self, word_embedding
                                   , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
