@@ -39,7 +39,7 @@ class CorefModel(object):
         self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
         self.sess.run(tf.global_variables_initializer())
         self.sess.run(tf.local_variables_initializer())
-        self.saver = tf.train.Saver(max_to_keep=10)
+        self.saver = tf.train.Saver(max_to_keep=3)
         self.train_writer = tf.summary.FileWriter(self.dir_tensoboard_log + "train", graph=tf.get_default_graph())
         self.validation_writer = tf.summary.FileWriter(self.dir_tensoboard_log + "validation", graph=tf.get_default_graph())
 
