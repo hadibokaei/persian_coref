@@ -55,7 +55,8 @@ class CorefModel(object):
         self.phrase_length      = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate phrases in doc]
         self.pair_rep_indices   = tf.placeholder(tf.int64, shape=[None, 2, 1]) #shape=[# of candidate pairs in doc, 2, 1]
         self.pair_gold          = tf.placeholder(tf.int32, shape=[None]) #shape=[# of candidate pairs in doc]
-        self.dropout_rate       = tf.placeholder(tf.float32, shape=[]) #shape=[# of candidate pairs in doc]
+        self.dropout_rate       = tf.placeholder(tf.float32, shape=[]) #scalar
+        self.learning_rate      = tf.placeholder(tf.float32, shape=[]) #scalar
 
 
     def add_word_representation(self):
@@ -152,7 +153,7 @@ class CorefModel(object):
         self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
         tf.summary.scalar("phrase loss", self.phrase_identification_loss)
 
-        self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.phrase_identification_loss)
+        self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.phrase_identification_loss)
 
     def add_pair_loss_train(self):
 
@@ -164,13 +165,13 @@ class CorefModel(object):
 
         self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
 
-        self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.pair_identification_loss)
+        self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
 
     def add_final_train(self):
         self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
         self.final_train = tf.train.AdamOptimizer(learning_rate=0.01).minimize(self.final_loss)
 
-    def train_phrase_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number):
+    def train_phrase_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number, learning_rate):
         global_step = 0
         for epoch in range(epoch_start, max_epoch_number):
             stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
@@ -220,7 +221,8 @@ class CorefModel(object):
                     self.phrase_indices: current_doc_phrase_indices,
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
-                    self.dropout_rate: 0.5
+                    self.dropout_rate: 0.5,
+                    self.learning_rate: learning_rate
                 }
                 try:
                     [_, loss, pred, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
@@ -307,6 +309,10 @@ class CorefModel(object):
             avg_f1 = np.average(all_f1)
 
             logger.info("==================================>epoch:{:3d} validation metrics: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
+
+    def restore_graph(self):
+        self.saver.restore(self.sess, tf.train.latest_checkpoint(self.dir_checkpoint))
+        return tf.train.latest_checkpoint(self.cfg.dir_checkpoints)
 
     def train_pair_identification(self, word_embedding
                                   , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
