@@ -120,8 +120,7 @@ class CorefModel(object):
 
         with tf.name_scope('metrics'):
             accuracy, accuracy_op = tf.metrics.accuracy(labels=self.gold_phrases, predictions=tf.to_int32(self.candidate_phrase_probability>0.5))
-        tf.summary.scalar("accuracy", accuracy)
-        tf.summary.scalar("accuracy_op", accuracy_op)
+        tf.summary.scalar("accuracy", accuracy_op)
         # precision, _ = tf.metrics.precision(labels=tf.argmax(self.gold_phrases, 0), predictions=tf.argmax(self.candidate_phrase_probability, 0))
         # tf.summary.scalar("precision", precision)
         # recall, _ = tf.metrics.recall(labels=tf.argmax(self.gold_phrases, 0), predictions=tf.argmax(self.candidate_phrase_probability, 0))
