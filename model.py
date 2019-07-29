@@ -111,6 +111,7 @@ class CorefModel(object):
                 sequence_length=self.phrase_length,
                 dtype=tf.float32)
             self.phrase_rep = tf.concat([output_fw, output_bw], axis=-1) # shape = [# of candidate phrases, 2 * lstm hidden size]
+            tf.summary.histogram("phrase representation", self.phrase_rep)
 
     def add_fcn_phrase(self):
 
