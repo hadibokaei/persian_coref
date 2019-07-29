@@ -21,5 +21,6 @@ phrase_max_gap = 100 # تعداد کلماتی که می‌تواند بین د�
 max_epoch_number = 50
 
 path_tensorboard = "tensorboard/"
+path_checkpoints = "chckpnts/"
 
 lstm_hidden_size = 128
