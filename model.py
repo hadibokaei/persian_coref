@@ -239,7 +239,7 @@ class CorefModel(object):
 
             save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
                                         global_step=int(epoch), write_meta_graph=False)
-            self.logger.info("model is saved in: {}".format(save_path))
+            logger.info("model is saved in: {}".format(save_path))
 
             all_precision = []
             all_recall = []
