@@ -118,7 +118,8 @@ class CorefModel(object):
         pred_2c = tf.concat([tf.expand_dims(pred, 1), tf.expand_dims(tf.math.abs(tf.math.add(pred, -1)), 1)], axis=1)
         gold_2c = tf.concat([tf.expand_dims(self.gold_phrases, 1), tf.expand_dims(tf.math.abs(tf.math.add(self.gold_phrases, -1)), 1)], axis=1)
 
-        accuracy, accuracy_op = tf.metrics.accuracy(labels=self.gold_phrases, predictions=tf.to_int32(self.candidate_phrase_probability>0.5))
+        with tf.name_scope('metrics'):
+            accuracy, accuracy_op = tf.metrics.accuracy(labels=self.gold_phrases, predictions=tf.to_int32(self.candidate_phrase_probability>0.5))
         tf.summary.scalar("accuracy", accuracy)
         tf.summary.scalar("accuracy_op", accuracy_op)
         # precision, _ = tf.metrics.precision(labels=tf.argmax(self.gold_phrases, 0), predictions=tf.argmax(self.candidate_phrase_probability, 0))
@@ -168,6 +169,8 @@ class CorefModel(object):
     def train_phrase_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number):
         global_step = 0
         for epoch in range(epoch_start, max_epoch_number):
+            stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
+            self.sess.run(tf.variables_initializer(stream_vars_valid))
             for batch_number in range(len(train_files_path)):
 
                 global_step += 1
@@ -236,7 +239,10 @@ class CorefModel(object):
             all_precision = []
             all_recall = []
             all_f1 = []
+            stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
+            self.sess.run(tf.variables_initializer(stream_vars_valid))
             for doc_num in range(len(validation_files_path)):
+
 
                 file = validation_files_path[doc_num]
                 [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
