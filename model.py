@@ -117,6 +117,7 @@ class CorefModel(object):
 
         dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.phrase_rep)
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
+        tf.summary.histogram("output layer", dense_output)
         dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
         self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of candidate phrases]
         self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
