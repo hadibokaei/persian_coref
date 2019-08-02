@@ -469,7 +469,7 @@ class CorefModel(object):
             avg_recall = np.average(all_recall)
             avg_f1 = np.average(all_f1)
 
-            logger.info("==================================>epoch:{:3d} validation metrics: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
+            logger.info("====================>epoch:{:3d} validation metrics: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
 
 
 
