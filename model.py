@@ -146,7 +146,7 @@ class CorefModel(object):
         dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
         self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of pruned candidate pairs]
         self.candidate_pair_probability = tf.math.sigmoid(self.candidate_pair_logit)
-        pred = tf.to_int32(self.candidate_phrase_probability > 0.5)
+        pred = tf.to_int32(self.candidate_pair_probability > 0.5)
 
         with tf.name_scope('metrics'):
             accuracy, accuracy_op = tf.metrics.accuracy(labels=self.pair_gold, predictions=pred)
