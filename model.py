@@ -116,7 +116,7 @@ class CorefModel(object):
     def add_fcn_phrase(self):
 
         dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.phrase_rep)
-        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(self.phrase_rep) # shape = [# of candidate phrases, lstm hidden size]
+        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(dropped_rep) # shape = [# of candidate phrases, lstm hidden size]
         tf.summary.histogram("output layer", dense_output)
         dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
         self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of candidate phrases]
@@ -140,9 +140,23 @@ class CorefModel(object):
                               , shape=[tf.shape(self.pair_rep_indices)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
 
     def add_fcn_pair(self):
-        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(self.pair_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
-        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dense_output)) # shape = [# of pruned candidate pairs]
+        dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.pair_rep)
+        dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(dropped_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
+        tf.summary.histogram("pair output layer", dense_output)
+        dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
+        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of pruned candidate pairs]
         self.candidate_pair_probability = tf.math.sigmoid(self.candidate_pair_logit)
+        pred = tf.to_int32(self.candidate_phrase_probability > 0.5)
+
+        with tf.name_scope('metrics'):
+            accuracy, accuracy_op = tf.metrics.accuracy(labels=self.pair_gold, predictions=pred)
+            precision, precision_op = tf.metrics.precision(labels=self.pair_gold, predictions=pred)
+            recall, recall_op = tf.metrics.recall(labels=self.pair_gold, predictions=pred)
+
+
+        tf.summary.scalar("pair accuracy", accuracy_op)
+        tf.summary.scalar("pair precision", precision_op)
+        tf.summary.scalar("pair recall", recall_op)
 
     def add_phrase_loss_train(self):
 
@@ -316,35 +330,42 @@ class CorefModel(object):
         self.saver.restore(self.sess, tf.train.latest_checkpoint(self.dir_checkpoint))
         return tf.train.latest_checkpoint(self.dir_checkpoint)
 
-    def train_pair_identification(self, word_embedding
-                                  , train_docs_word_ids, train_docs_char_ids, train_docs_phrase_indices
-                                  , train_docs_gold_phrases, train_docs_phrase_length
-                                  , train_docs_pair_indices, train_docs_pair_golds
-                                  , val_docs_word_ids, val_docs_char_ids, val_docs_phrase_indices
-                                  , val_docs_gold_phrases, val_docs_phrase_length
-                                  , val_docs_pair_indices, val_docs_pair_golds
-                                  , epoch_start, max_epoch_number):
-        for epoch in range(epoch_start, max_epoch_number):
-            for batch_number in range(len(train_docs_word_ids)):
-                current_word_ids = train_docs_word_ids[batch_number]
+    def train_pair_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number, learning_rate):
 
+        global_step = 0
+        for epoch in range(epoch_start, max_epoch_number):
+            stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
+            self.sess.run(tf.variables_initializer(stream_vars_valid))
+            for batch_number in range(len(train_files_path)):
+                global_step += 1
+
+                file = train_files_path[batch_number]
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, pair_indices, pair_gold] = load_data(file)
+                if len(doc_word) == 0:
+                    print("skip this file (zero length document): {}".format(file))
+                    continue
+                if np.sum(gold_phrase) == 0:
+                    print("skip this file (no phrase): {}".format(file))
+                    continue
+
+                current_word_ids = doc_word
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
-                current_char_ids = train_docs_char_ids[batch_number]
+                current_char_ids = doc_char
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_doc_phrase_indices = train_docs_phrase_indices[batch_number]
-                current_doc_gold_phrases = train_docs_gold_phrases[batch_number]
-                current_doc_phrase_length = train_docs_phrase_length[batch_number]
+                current_doc_phrase_indices = phrase_word
+                current_doc_gold_phrases = gold_phrase
+                current_doc_phrase_length = phrase_word_len
 
 
-                current_gold_pair = train_docs_pair_golds[batch_number]
+                current_gold_pair = pair_gold
                 posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
                 negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=len(posetive_indices)))
                 all_indices = np.concatenate([negative_indices, posetive_indices])
                 np.random.shuffle(all_indices)
 
-                current_doc_pair_indices = train_docs_pair_indices[batch_number][all_indices]
+                current_doc_pair_indices = pair_indices[all_indices]
                 current_doc_pair_gold = current_gold_pair[all_indices]
 
                 feed_dict = {
@@ -358,47 +379,58 @@ class CorefModel(object):
                     self.phrase_length: current_doc_phrase_length,
                     self.pair_gold: current_doc_pair_gold,
                     self.pair_rep_indices: current_doc_pair_indices,
+                    self.dropout_rate: 0.5,
+                    self.learning_rate: learning_rate
                 }
-                [_, loss, pred] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
-                                                          , self.candidate_pair_probability], feed_dict)
+                try:
+                    [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
+                                                              , self.candidate_pair_probability, self.merged], feed_dict)
 
-                pred[pred > 0.5] = 1
-                pred[pred <= 0.5] = 0
+                    self.train_writer.add_summary(summary, global_step)
+                    pred[pred > 0.5] = 1
+                    pred[pred <= 0.5] = 0
 
-                gold = current_doc_pair_gold
+                    gold = current_doc_pair_gold
 
-                precision = precision_score(gold, pred) * 100
-                recall = recall_score(gold, pred) * 100
-                f1_measure = f1_score(gold, pred) * 100
-                logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
-                            .format(epoch, batch_number, loss, precision, recall, f1_measure))
+                    precision = precision_score(gold, pred) * 100
+                    recall = recall_score(gold, pred) * 100
+                    f1_measure = f1_score(gold, pred) * 100
+                    logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
+                                .format(epoch, batch_number, loss, precision, recall, f1_measure))
+                except Exception as e:
+                    print(e)
+
+            save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
+                                        global_step=int(epoch), write_meta_graph=False)
+            logger.info("model is saved in: {}".format(save_path))
+            all_precision = []
+            all_recall = []
+            all_f1 = []
+            stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
+            self.sess.run(tf.variables_initializer(stream_vars_valid))
+            for doc_num in range(len(validation_files_path)):
+                file = validation_files_path[doc_num]
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, pair_indices, pair_gold] = load_data(file)
+                if len(doc_word) == 0:
+                    print("skip this file (zero length document): {}".format(file))
+                    continue
+                if np.sum(gold_phrase) == 0:
+                    print("skip this file (no phrase): {}".format(file))
+                    continue
 
 
-                # print("orig gold:{}/{} pruned gold:{}/{} pred:{}/{}"
-                #       .format(np.sum(current_gold_pair), len(current_gold_pair)
-                #               , np.sum(gold), len(gold)
-                #               , np.sum(pred), len(pred)))
-
-                # a = pred[gold==1]
-                # print(a[:5])
-                # b = pred[gold==0]
-                # print(b[:5])
-
-            for doc_num in range(len(val_docs_word_ids)):
-                current_word_ids = val_docs_word_ids[doc_num]
-
+                current_word_ids = doc_word
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
-                current_char_ids = val_docs_char_ids[doc_num]
+                current_char_ids = doc_char
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_doc_phrase_indices = val_docs_phrase_indices[doc_num]
-                current_doc_gold_phrases = val_docs_gold_phrases[doc_num]
-                current_doc_phrase_length = val_docs_phrase_length[doc_num]
+                current_doc_phrase_indices = phrase_word
+                current_doc_gold_phrases = gold_phrase
+                current_doc_phrase_length = phrase_word_len
 
-
-                current_doc_pair_indices = val_docs_pair_indices[doc_num]
-                current_doc_pair_gold = val_docs_pair_golds[doc_num]
+                current_doc_pair_indices = pair_indices
+                current_doc_pair_gold = pair_gold
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
@@ -411,20 +443,33 @@ class CorefModel(object):
                     self.phrase_length: current_doc_phrase_length,
                     self.pair_gold: current_doc_pair_gold,
                     self.pair_rep_indices: current_doc_pair_indices,
+                    self.dropout_rate: 0
                 }
-                [pred] = self.sess.run([self.candidate_pair_probability], feed_dict)
+                try:
+                    [pred, summary] = self.sess.run([self.candidate_pair_probability, self.merged], feed_dict)
 
-                pred[pred > 0.5] = 1
-                pred[pred <= 0.5] = 0
+                    self.validation_writer.add_summary(summary, global_step)
+                    pred[pred > 0.5] = 1
+                    pred[pred <= 0.5] = 0
 
-                gold = current_doc_pair_gold
+                    gold = current_doc_pair_gold
 
-                precision = precision_score(gold, pred) * 100
-                recall = recall_score(gold, pred) * 100
-                f1_measure = f1_score(gold, pred) * 100
-                logger.info("val:{:3d} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
-                            .format(doc_num, precision, recall, f1_measure))
+                    precision = precision_score(gold, pred) * 100
+                    all_precision.append(precision)
+                    recall = recall_score(gold, pred) * 100
+                    all_recall.append(recall)
+                    f1_measure = f1_score(gold, pred) * 100
+                    all_f1.append(f1_measure)
+                    logger.info("val:{:3d} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
+                                .format(doc_num, precision, recall, f1_measure))
+                except Exception as e:
+                    print(e)
 
+            avg_precision = np.average(all_precision)
+            avg_recall = np.average(all_recall)
+            avg_f1 = np.average(all_f1)
+
+            logger.info("==================================>epoch:{:3d} validation metrics: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
 
 
 
