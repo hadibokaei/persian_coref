@@ -214,10 +214,11 @@ class CorefModel(object):
                 current_gold_phrase = gold_phrase
                 num_posetive = np.sum(current_gold_phrase)
 
-                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=num_posetive))
+                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=100*num_posetive))
                 posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
                 all_indices = np.concatenate([negative_indices, posetive_indices])
                 np.random.shuffle(all_indices)
+                print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_phrase)))
 
                 current_doc_phrase_indices = phrase_word[all_indices]
                 current_doc_gold_phrases = gold_phrase[all_indices]
