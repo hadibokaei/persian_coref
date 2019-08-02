@@ -4,6 +4,10 @@ from common.vocabulary import Vocabulary
 from os import listdir
 from os.path import isdir, isfile, join
 from common import config
+import sys
+
+lr = float(sys.argv[1])
+
 
 data_files_path = []
 data_files_path += get_all_files(config.path_data_train, '.npz')
@@ -54,7 +58,7 @@ except Exception as e:
 
 # model.train_phrase_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.001)
 
-model.train_pair_identification(word_embedding, train_files_path[:10], train_files_path[:2], epoch_start=0, max_epoch_number=1000, learning_rate=0.001)
+model.train_pair_identification(word_embedding, train_files_path[:10], train_files_path[:2], epoch_start=0, max_epoch_number=1000, learning_rate=lr)
 
 
 # sess = tf.InteractiveSession()
