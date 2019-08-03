@@ -348,9 +348,6 @@ class CorefModel(object):
                 if np.sum(gold_phrase) == 0:
                     print("skip this file (no phrase): {}".format(file))
                     continue
-                if np.sum(pair_gold) == 0:
-                    print("skip this file (no pair): {}".format(file))
-                    continue
 
                 current_word_ids = doc_word
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
@@ -365,6 +362,9 @@ class CorefModel(object):
 
                 current_gold_pair = pair_gold
                 posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
+                if len(posetive_indices) == 0:
+                    print("skip this file (no pair): {}".format(file))
+                    continue
                 negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=10*len(posetive_indices)))
                 all_indices = np.concatenate([negative_indices, posetive_indices])
                 print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_pair)))
