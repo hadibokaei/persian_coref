@@ -362,9 +362,7 @@ class CorefModel(object):
 
                 current_gold_pair = pair_gold
                 posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
-                if len(posetive_indices) == 0:
-                    print("skip this file (no pair): {}".format(file))
-                    continue
+                print(np.sum(pair_gold))
                 negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=10*len(posetive_indices)))
                 all_indices = np.concatenate([negative_indices, posetive_indices])
                 print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_pair)))
