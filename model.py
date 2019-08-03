@@ -348,6 +348,9 @@ class CorefModel(object):
                 if np.sum(gold_phrase) == 0:
                     print("skip this file (no phrase): {}".format(file))
                     continue
+                if np.sum(pair_gold) == 0:
+                    print("skip this file (no pair): {}".format(file))
+                    continue
 
                 current_word_ids = doc_word
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
