@@ -365,7 +365,7 @@ class CorefModel(object):
 
                 current_gold_pair = pair_gold
                 posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
-                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=100*len(posetive_indices)))
+                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=1000*len(posetive_indices)))
                 all_indices = np.concatenate([negative_indices, posetive_indices])
                 print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_pair)))
                 np.random.shuffle(all_indices)
