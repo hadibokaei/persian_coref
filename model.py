@@ -409,7 +409,7 @@ class CorefModel(object):
                         logger.info("epoch:{:3d} batch:{:4d}",format(epoch, batch_number))
 
                 except Exception as e:
-                    print(e)
+                    print("here:{}".format(e))
 
             save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
                                         global_step=int(epoch), write_meta_graph=False)
