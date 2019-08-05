@@ -386,30 +386,31 @@ class CorefModel(object):
                     self.dropout_rate: 0.5,
                     self.learning_rate: learning_rate
                 }
-                # try:
-                [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
-                                                          , self.candidate_pair_probability, self.merged], feed_dict)
-
-                self.train_writer.add_summary(summary, global_step)
-                pred[pred > 0.5] = 1
-                pred[pred <= 0.5] = 0
-
-                gold = current_doc_pair_gold
-
-                precision = precision_score(gold, pred) * 100
-                recall = recall_score(gold, pred) * 100
-                f1_measure = f1_score(gold, pred) * 100
                 try:
-                    logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} cand:{:6d}/{:8d} gold:{:3d}/{:6d} pred:{:3d}/{:6d} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
-                                .format(epoch, batch_number, loss,
-                                        len(all_indices), len(current_gold_pair),
-                                        np.sum(gold), len(gold), np.sum(pred), len(pred),
-                                        precision, recall, f1_measure))
-                except Exception as e:
-                    logger.info("epoch:{:3d} batch:{:4d}",format(epoch, batch_number))
+                    [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
+                                                              , self.candidate_pair_probability, self.merged], feed_dict)
 
-                # except Exception as e:
-                #     print("here:{}".format(e))
+                    self.train_writer.add_summary(summary, global_step)
+                    pred[pred > 0.5] = 1
+                    pred[pred <= 0.5] = 0
+
+                    gold = current_doc_pair_gold
+
+                    precision = precision_score(gold, pred) * 100
+                    recall = recall_score(gold, pred) * 100
+                    f1_measure = f1_score(gold, pred) * 100
+                    try:
+                        logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} cand:{:6d}/{:8d} gold:{:3d}/{:6d} pred:{:3d}/{:6d} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
+                                    .format(epoch, batch_number, loss,
+                                            len(all_indices), len(current_gold_pair),
+                                            np.sum(gold), len(gold), np.sum(pred), len(pred),
+                                            precision, recall, f1_measure))
+                    except Exception as e:
+                        print("here:{}".format(e))
+                        logger.info("epoch:{:3d} batch:{:4d}".format(epoch, batch_number))
+
+                except Exception as e:
+                    print("here:{}".format(e))
 
             save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
                                         global_step=int(epoch), write_meta_graph=False)
