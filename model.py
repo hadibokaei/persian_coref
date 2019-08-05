@@ -367,7 +367,6 @@ class CorefModel(object):
                 posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
                 negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=1000*len(posetive_indices)))
                 all_indices = np.concatenate([negative_indices, posetive_indices])
-                print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_pair)))
                 np.random.shuffle(all_indices)
 
                 current_doc_pair_indices = pair_indices[all_indices]
@@ -397,13 +396,18 @@ class CorefModel(object):
 
                     gold = current_doc_pair_gold
 
-                    print("gold:{}/{} pred:{}/{}".format(np.sum(gold), len(gold), np.sum(pred), len(pred)))
-
                     precision = precision_score(gold, pred) * 100
                     recall = recall_score(gold, pred) * 100
                     f1_measure = f1_score(gold, pred) * 100
-                    logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
-                                .format(epoch, batch_number, loss, precision, recall, f1_measure))
+                    try:
+                        logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} cand:{:6d}/{:8d} gold:{:3d}/{:6d} pred:{:3d}/{:6d} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
+                                    .format(epoch, batch_number, loss,
+                                            len(all_indices), len(current_gold_pair),
+                                            np.sum(gold), len(gold), np.sum(pred), len(pred),
+                                            precision, recall, f1_measure))
+                    except Exception as e:
+                        logger.info("epoch:{:3d} batch:{:4d}",format(epoch, batch_number))
+
                 except Exception as e:
                     print(e)
 
@@ -467,8 +471,8 @@ class CorefModel(object):
                     all_recall.append(recall)
                     f1_measure = f1_score(gold, pred) * 100
                     all_f1.append(f1_measure)
-                    logger.info("val:{:3d} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
-                                .format(doc_num, precision, recall, f1_measure))
+                    logger.info("val-{}:{:3d} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
+                                .format(file, doc_num, precision, recall, f1_measure))
                 except Exception as e:
                     print(e)
 
@@ -476,7 +480,7 @@ class CorefModel(object):
             avg_recall = np.average(all_recall)
             avg_f1 = np.average(all_f1)
 
-            logger.info("====================>epoch:{:3d} validation metrics: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} {}".format(epoch, avg_precision, avg_recall, avg_f1, file))
+            logger.info("====================>epoch:{:3d} validation metrics: precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
 
 
 
