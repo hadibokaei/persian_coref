@@ -403,7 +403,7 @@ class CorefModel(object):
                         logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} cand:{:6d}/{:8d} gold:{:3d}/{:6d} pred:{:3d}/{:6d} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
                                     .format(epoch, batch_number, loss,
                                             len(all_indices), len(current_gold_pair),
-                                            np.sum(gold), len(gold), np.sum(pred), len(pred),
+                                            int(np.sum(gold)), len(gold), int(np.sum(pred)), len(pred),
                                             precision, recall, f1_measure))
                     except Exception as e:
                         print("here:{}".format(e))
