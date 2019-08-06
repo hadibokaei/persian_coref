@@ -400,7 +400,7 @@ class CorefModel(object):
                     recall = recall_score(gold, pred) * 100
                     f1_measure = f1_score(gold, pred) * 100
                     try:
-                        logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} cand:{:6d}/{:8d} gold:{:3d}/{:6d} pred:{:3d}/{:6d} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
+                        logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} cand:{:7d}/{:8d} gold:{:3d}/{:6d} pred:{:3d}/{:6d} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
                                     .format(epoch, batch_number, loss,
                                             len(all_indices), len(current_gold_pair),
                                             int(np.sum(gold)), len(gold), int(np.sum(pred)), len(pred),
