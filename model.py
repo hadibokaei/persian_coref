@@ -363,14 +363,14 @@ class CorefModel(object):
                 current_doc_phrase_length = phrase_word_len
 
 
-                current_gold_pair = pair_gold
-                posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
-                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=10000*len(posetive_indices)))
-                all_indices = np.concatenate([negative_indices, posetive_indices])
-                np.random.shuffle(all_indices)
+                # current_gold_pair = pair_gold
+                # posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
+                # negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=10000*len(posetive_indices)))
+                # all_indices = np.concatenate([negative_indices, posetive_indices])
+                # np.random.shuffle(all_indices)
 
-                current_doc_pair_indices = pair_indices[all_indices]
-                current_doc_pair_gold = current_gold_pair[all_indices]
+                current_doc_pair_indices = pair_indices
+                current_doc_pair_gold = pair_gold
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
@@ -482,6 +482,74 @@ class CorefModel(object):
             avg_f1 = np.average(all_f1)
 
             logger.info("====================>epoch:{:3d} validation metrics: precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
+
+
+    def evaluate_pair_identification(self, word_embedding, test_files_path):
+
+        all_precision = []
+        all_recall = []
+        all_f1 = []
+        for doc_num in range(len(test_files_path)):
+            file = test_files_path[doc_num]
+            [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, pair_indices, pair_gold] = load_data(file)
+            if len(doc_word) == 0:
+                print("skip this file (zero length document): {}".format(file))
+                continue
+            if np.sum(gold_phrase) == 0:
+                print("skip this file (no phrase): {}".format(file))
+                continue
+
+
+            current_word_ids = doc_word
+            current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
+
+            current_char_ids = doc_char
+            current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
+
+            current_doc_phrase_indices = phrase_word
+            current_doc_gold_phrases = gold_phrase
+            current_doc_phrase_length = phrase_word_len
+
+            current_doc_pair_indices = pair_indices
+            current_doc_pair_gold = pair_gold
+
+            feed_dict = {
+                self.word_ids: current_word_ids,
+                self.word_embedding: word_embedding,
+                self.sentence_length: current_sentence_length,
+                self.char_ids: current_char_ids,
+                self.word_length: current_word_length,
+                self.phrase_indices: current_doc_phrase_indices,
+                self.gold_phrases: current_doc_gold_phrases,
+                self.phrase_length: current_doc_phrase_length,
+                self.pair_gold: current_doc_pair_gold,
+                self.pair_rep_indices: current_doc_pair_indices,
+                self.dropout_rate: 0
+            }
+            try:
+                [pred] = self.sess.run([self.candidate_pair_probability], feed_dict)
+
+                pred[pred > 0.5] = 1
+                pred[pred <= 0.5] = 0
+
+                gold = current_doc_pair_gold
+
+                precision = precision_score(gold, pred) * 100
+                all_precision.append(precision)
+                recall = recall_score(gold, pred) * 100
+                all_recall.append(recall)
+                f1_measure = f1_score(gold, pred) * 100
+                all_f1.append(f1_measure)
+                logger.info("{.3d}/{.3d}- precision:{:6.2f} recall:{:6.2f} f1:{:6.2f} file:{}"
+                            .format(doc_num, len(test_files_path), precision, recall, f1_measure, file))
+            except Exception as e:
+                print(e)
+
+        avg_precision = np.average(all_precision)
+        avg_recall = np.average(all_recall)
+        avg_f1 = np.average(all_f1)
+
+        logger.info("test metrics: precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}".format(avg_precision, avg_recall, avg_f1))
 
 
 
