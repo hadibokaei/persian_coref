@@ -173,13 +173,20 @@ class CorefModel(object):
 
     def add_pair_loss_train(self):
 
-        gold = tf.expand_dims(tf.to_float(self.pair_gold),1)
-        gold_2d = tf.concat([gold,1-gold],1)
+        loss_per_point = -(tf.multiply(tf.math.log(self.candidate_pair_probability), tf.cast(self.pair_gold, tf.float32))+tf.multiply(tf.math.log(1-self.candidate_pair_probability), 1-tf.cast(self.pair_gold, tf.float32)))
 
-        pred = tf.expand_dims(self.candidate_pair_logit, 1)
-        pred_2d = tf.concat([pred,1-pred],1)
+        self.pair_identification_loss = tf.reduce_sum(loss_per_point)
 
-        self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, reduction=tf.losses.Reduction.SUM)
+
+
+
+        # gold = tf.expand_dims(tf.to_float(self.pair_gold),1)
+        # gold_2d = tf.concat([gold,1-gold],1)
+        #
+        # pred = tf.expand_dims(self.candidate_pair_logit, 1)
+        # pred_2d = tf.concat([pred,1-pred],1)
+        #
+        # self.pair_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d, reduction=tf.losses.Reduction.SUM)
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
 
