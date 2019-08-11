@@ -363,14 +363,14 @@ class CorefModel(object):
                 current_doc_phrase_length = phrase_word_len
 
 
-                # current_gold_pair = pair_gold
-                # posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
-                # negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=10000*len(posetive_indices)))
-                # all_indices = np.concatenate([negative_indices, posetive_indices])
-                # np.random.shuffle(all_indices)
+                current_gold_pair = pair_gold
+                posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
+                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_pair == 0)), k=10000*len(posetive_indices)))
+                all_indices = np.concatenate([negative_indices, posetive_indices])
+                np.random.shuffle(all_indices)
 
-                current_doc_pair_indices = pair_indices
-                current_doc_pair_gold = pair_gold
+                current_doc_pair_indices = pair_indices[all_indices]
+                current_doc_pair_gold = pair_gold[all_indices]
 
                 feed_dict = {
                     self.word_ids: current_word_ids,
@@ -402,8 +402,8 @@ class CorefModel(object):
                     try:
                         logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} cand:{:7d}/{:8d} gold:{:4d}/{:7d} pred:{:4d}/{:7d} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
                                     .format(epoch, batch_number, loss,
-                                            # len(all_indices), len(current_gold_pair),
-                                            len(pair_indices), len(pair_indices),
+                                            len(all_indices), len(current_gold_pair),
+                                            # len(pair_indices), len(pair_indices),
                                             int(np.sum(gold)), len(gold), int(np.sum(pred)), len(pred),
                                             precision, recall, f1_measure))
                     except Exception as e:
