@@ -145,7 +145,8 @@ class CorefModel(object):
         # tf.summary.histogram("pair output layer", dense_output)
         dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
         self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of pruned candidate pairs]
-        self.candidate_pair_probability = tf.math.sigmoid(self.candidate_pair_logit)
+        # self.candidate_pair_probability = tf.math.sigmoid(self.candidate_pair_logit)
+        self.candidate_pair_probability = tf.math.softmax(self.candidate_pair_logit)
         pred = tf.to_int32(self.candidate_pair_probability > 0.5)
 
         with tf.name_scope('metrics'):
@@ -173,10 +174,10 @@ class CorefModel(object):
 
     def add_pair_loss_train(self):
 
-        loss_per_point = -(tf.multiply(tf.math.log(self.candidate_pair_probability), tf.cast(self.pair_gold, tf.float32))
-                           +tf.multiply(tf.math.log(1-self.candidate_pair_probability), 1-tf.cast(self.pair_gold, tf.float32)))
+        # loss_per_point = -(tf.multiply(tf.math.log(self.candidate_pair_probability), tf.cast(self.pair_gold, tf.float32))
+        #                    +tf.multiply(tf.math.log(1-self.candidate_pair_probability), 1-tf.cast(self.pair_gold, tf.float32)))
 
-        # loss_per_point = tf.multiply(self.candidate_pair_probability, tf.cast(self.pair_gold, tf.float32))
+        loss_per_point =  -tf.multiply(self.candidate_pair_probability, tf.cast(self.pair_gold, tf.float32))
 
         self.pair_identification_loss = tf.reduce_sum(loss_per_point)
 
