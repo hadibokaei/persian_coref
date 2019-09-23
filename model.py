@@ -173,10 +173,10 @@ class CorefModel(object):
 
     def add_pair_loss_train(self):
 
-        # loss_per_point = -(tf.multiply(tf.math.log(self.candidate_pair_probability), tf.cast(self.pair_gold, tf.float32))
-        #                    +tf.multiply(tf.math.log(1-self.candidate_pair_probability), 1-tf.cast(self.pair_gold, tf.float32)))
+        loss_per_point = -(tf.multiply(tf.math.log(self.candidate_pair_probability), tf.cast(self.pair_gold, tf.float32))
+                           +tf.multiply(tf.math.log(1-self.candidate_pair_probability), 1-tf.cast(self.pair_gold, tf.float32)))
 
-        loss_per_point = -tf.multiply(self.candidate_pair_probability, tf.cast(self.pair_gold, tf.float32))
+        # loss_per_point = tf.multiply(self.candidate_pair_probability, tf.cast(self.pair_gold, tf.float32))
 
         self.pair_identification_loss = tf.reduce_sum(loss_per_point)
 
