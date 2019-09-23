@@ -17,7 +17,7 @@ for file_name in listdir(config.path_data_train):
         data_files_path += get_all_files(file_path, '.npz')
 
 num_files = len(data_files_path)
-num_train_file = int(0.99*num_files)
+num_train_file = int(0.90*num_files)
 num_validation_file = num_files - num_train_file
 train_files_path = data_files_path[:num_train_file]
 validation_files_path = data_files_path[num_train_file+1:]
