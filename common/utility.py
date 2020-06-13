@@ -4,6 +4,7 @@ from common import config
 import numpy as np
 from os import listdir
 from os.path import isdir, isfile, join
+import pickle
 
 def setup_custom_logger(name):
     logger = logging.getLogger(name)
@@ -42,6 +43,8 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
     phrase_word:    shape = [num of candidate phrases, max num of words in a phrase, 2] بعد سوم ۲ عدد است: عدد اول نشان‌دهنده ترتیب جمله است که از ۱ شروع می‌شود. عدد دوم نشان‌دهنده ترتیب کلمه در جمله است که برای هر جمله از ۰ شروع می‌شود
     phrase_word_len:shape = [num of candidate phrases] تعداد کلمات داخل هر عبارت را نشان می‌دهد. کلمات اضافی داخل عبارت با مقدار [۰و۰] پر شده است
     gold_phrase:    shape = [num of candidate phrases] یک لیست باینری است. به ازای هر عبارت کاندید مشخص می‌کند که آیا در پیکره به عنوان یک عبارت برچسب خورده است یا نه
+    clusters:       کلاسترهایی را که توسط برچسب‌های مرجع در متن مشخص شده است را ذخیره می‌کند
+    gold_2_local_phrase_id_map: یک دیکشنری است که کلید آن شناسه عبارت مشخص شده در متن مرجع است و کلید آن شناسه آن عبارت در لیست‌های بالا می‌باشد.
     pair_indices:   shape = [num of candidate pairs, 2, 1] یک لیست است که اندیس عباراتی را مشخص می‌کند که با هم می‌توانند جفت شوند
     pair_gold:      shape = [num of candidate pairs] مشخص می‌کند که آیا جفت عبارت کاندید در پیکره به عنوان هم‌مرجع برچسب خورده‌اند یا خیر
     :param input_file_name: فایل ورودی که قرار است اطلاعات آنم استخراج شود.
@@ -144,6 +147,12 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
     assert len(phrase_word) == len(gold_phrase)
     assert len(phrase_word) == len(phrase_id)
 
+    phrase_id_np = np.array(phrase_id)
+    local_phrase_ids = np.squeeze(np.argwhere(phrase_id_np > 0))
+    gold_phrase_ids = phrase_id_np[local_phrase_ids]
+    gold_2_local_phrase_id_map = dict(zip(gold_phrase_ids, local_phrase_ids))
+
+
     clusters = []
     for pair in phrase_id_pair:
         found = False
@@ -157,41 +166,8 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
             clusters[-1].add(pair[0])
             clusters[-1].add(pair[1])
 
-    pair_indices = []
-    pair_gold = []
-    for i in range(len(phrase_word)):
-        print("{}/{}".format(i,len(phrase_word)), end = '\r')
-        counter = 0
-        for j in range(i+1,len(phrase_word)):
-            if not any(item in phrase_word[i][:phrase_word_len[i]] for item in phrase_word[j][:phrase_word_len[j]]):
-                pair_indices.append([[i],[j]])
-                if gold_phrase[i] == 1 and gold_phrase[j] == 1:
-                    phrase1_id = phrase_id[i]
-                    phrase2_id = phrase_id[j]
-                    same_cluster = False
-                    for clstr in clusters:
-                        if phrase1_id in clstr and phrase2_id in clstr:
-                            same_cluster = True
-                            break
-                    if same_cluster:
-                        pair_gold.append(1)
-                    else:
-                        pair_gold.append(0)
-                else:
-                    pair_gold.append(0)
-                counter += 1
-            if counter > config.phrase_max_gap * config.phrase_max_size:
-                break
+    pickle.dump([doc_word,doc_char,phrase_word,phrase_word_len,gold_phrase,clusters,gold_2_local_phrase_id_map], open(output_file_name, "wb"))
 
-    assert len(pair_indices) == len(pair_gold)
-
-    logger.info("sentences:{} candidate phrases:{} gold phrases:{} candidate pairs:{} gold pairs:{}"
-                .format(len(doc_word),len(phrase_word),np.sum(gold_phrase),len(pair_indices),np.sum(pair_gold)))
-
-    np.savez_compressed(output_file_name, doc_word=doc_word
-                        , doc_char=doc_char, phrase_word = phrase_word
-                        , phrase_word_len=phrase_word_len, gold_phrase=gold_phrase
-                        , pair_indices = pair_indices, pair_gold = pair_gold)
 
 def pair_has_overlap(phrase1, phrase2):
     has_overlap = False
@@ -205,15 +181,7 @@ def pair_has_overlap(phrase1, phrase2):
     return has_overlap
 
 def load_data(file_name):
-    with np.load(file_name) as data:
-        doc_word = data["doc_word"]
-        doc_char = data["doc_char"]
-        phrase_word = data["phrase_word"]
-        phrase_word_len = data["phrase_word_len"]
-        gold_phrase = data["gold_phrase"]
-        pair_indices = data["pair_indices"]
-        pair_gold = data["pair_gold"]
-        return doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, pair_indices, pair_gold
+    return pickle.load(open(file_name, 'rb'))
 
 
 
