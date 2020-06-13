@@ -399,14 +399,15 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
-                                                              , self.candidate_pair_probability, self.merged], feed_dict)
+                    [_, loss, summary] = self.sess.run([self.final_train, self.final_loss, self.merged], feed_dict)
+                    # [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
+                    #                                           , self.candidate_pair_probability, self.merged], feed_dict)
 
-                    self.train_writer.add_summary(summary, global_step)
-                    pred[pred > 0.5] = 1
-                    pred[pred <= 0.5] = 0
-
-                    gold = current_doc_pair_gold
+                    # self.train_writer.add_summary(summary, global_step)
+                    # pred[pred > 0.5] = 1
+                    # pred[pred <= 0.5] = 0
+                    #
+                    # gold = current_doc_pair_gold
 
                     # precision = precision_score(gold, pred) * 100
                     # recall = recall_score(gold, pred) * 100
