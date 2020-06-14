@@ -258,6 +258,9 @@ class CorefModel(object):
 
                     gold = current_doc_gold_phrases
 
+                    print(pred)
+                    print(gold)
+
                     precision = precision_score(gold, pred) * 100
                     recall = recall_score(gold, pred) * 100
                     f1_measure = f1_score(gold, pred) * 100
