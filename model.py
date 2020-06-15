@@ -176,10 +176,10 @@ class CorefModel(object):
         pred = tf.expand_dims(self.candidate_phrase_logit, 1)
         pred_2d = tf.concat([pred,1-pred],1)
 
-        self.phrase_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(self.gold_phrases>0
-                                                                              , 1-self.candidate_phrase_probability
-                                                                              , self.candidate_phrase_probability)))
-        # self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
+        # self.phrase_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(self.gold_phrases>0
+        #                                                                       , 1-self.candidate_phrase_probability
+        #                                                                       , self.candidate_phrase_probability)))
+        self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
         tf.summary.scalar("phrase loss", self.phrase_identification_loss)
 
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.phrase_identification_loss)
