@@ -120,7 +120,7 @@ class CorefModel(object):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(dropped_rep) # shape = [# of candidate phrases, lstm hidden size]
         tf.summary.histogram("output layer", dense_output)
         dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
-        self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of candidate phrases]
+        self.candidate_phrase_logit = tf.squeeze(tf.keras.layers.Dense(1)(dropped_dense_output)) # shape = [# of candidate phrases]
         self.candidate_phrase_probability = tf.math.sigmoid(self.candidate_phrase_logit)
 
         pred = tf.to_int32(self.candidate_phrase_probability > 0.5)
@@ -224,7 +224,7 @@ class CorefModel(object):
                 current_phrase_word = np.array(phrase_word)
                 current_phrase_word_len = np.array(phrase_word_len)
                 num_posetive = np.sum(current_gold_phrase)
-                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=100*num_posetive))
+                negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=1*num_posetive))
                 posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
                 all_indices = np.concatenate([negative_indices, posetive_indices])
                 np.random.shuffle(all_indices)
@@ -251,8 +251,8 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pred, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
-                                                                 , self.candidate_phrase_probability, self.merged], feed_dict)
+                    [_, loss, pred, l, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
+                                                                 , self.candidate_phrase_probability, self.candidate_phrase_logit, self.merged], feed_dict)
 
                     self.train_writer.add_summary(summary, global_step)
                     pred[pred > 0.5] = 1
