@@ -176,10 +176,10 @@ class CorefModel(object):
         pred = tf.expand_dims(self.candidate_phrase_logit, 1)
         pred_2d = tf.concat([pred,1-pred],1)
 
-        # self.phrase_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(self.gold_phrases>0
-        #                                                                       , 1-self.candidate_phrase_probability
-        #                                                                       , self.candidate_phrase_probability)))
-        self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
+        self.phrase_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(self.gold_phrases>0
+                                                                              , self.candidate_phrase_probability
+                                                                              , 1-self.candidate_phrase_probability)))
+        # self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
         tf.summary.scalar("phrase loss", self.phrase_identification_loss)
 
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.phrase_identification_loss)
@@ -190,6 +190,13 @@ class CorefModel(object):
         pred_pair_indices = tf.expand_dims(self.pair_indices, 1)
         c = tf.math.abs(gold_pair_indices-pred_pair_indices)
         d  = tf.reduce_min(tf.reduce_sum(c, 2), 1)  #shape = [# of pruned candidate pairs]
+
+        # pair_gold = tf.cast((d > 0), tf.int32)
+        # gold = tf.expand_dims(tf.to_float(pair_gold),1)
+        # gold_2d = tf.concat([gold,1-gold],1)
+        #
+        # pred = tf.expand_dims(self.candidate_phrase_logit, 1)
+        # pred_2d = tf.concat([pred,1-pred],1)
 
         self.pair_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
 
