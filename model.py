@@ -264,8 +264,8 @@ class CorefModel(object):
                     gold_indices = np.where(gold == 1)
 
 
-                    print(pred_indices)
-                    print(np.shape(pred_indices))
+                    # print(pred_indices)
+                    # print(np.shape(pred_indices))
                     # print(gold_indices)
                     # print(np.shape(gold_indices))
 
