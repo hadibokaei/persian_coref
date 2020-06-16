@@ -2,8 +2,9 @@ import tensorflow as tf
 from  common.utility import pad_sequences, logger, load_data
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score
-from itertools import product
 import random
+from common.utility import convert_pairs_to_clusters
+
 
 class CorefModel(object):
 
@@ -198,7 +199,7 @@ class CorefModel(object):
         # pred = tf.expand_dims(self.candidate_phrase_logit, 1)
         # pred_2d = tf.concat([pred,1-pred],1)
 
-        self.pair_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
+        self.pair_identification_loss = -tf.reduce_mean(tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
 
@@ -265,8 +266,8 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pred, l, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
-                                                                 , self.candidate_phrase_probability, self.candidate_phrase_logit, self.merged], feed_dict)
+                    [_, loss, pred, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
+                                                                 , self.candidate_phrase_probability, self.merged], feed_dict)
 
                     self.train_writer.add_summary(summary, global_step)
                     pred[pred > 0.5] = 1
@@ -422,7 +423,23 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, summary] = self.sess.run([self.final_train, self.final_loss, self.merged], feed_dict)
+                    [_, loss, pair_probability, pair_indices, summary] = \
+                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged], feed_dict)
+
+                    print(pair_indices)
+                    print(pair_probability)
+                    extracted_pairs = pair_indices[pair_probability>0.5]
+                    predicted_clusters = convert_pairs_to_clusters(extracted_pairs)
+                    gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
+
+                    print(predicted_clusters)
+                    print(gold_clusters)
+
+
+
+
+
+
                     # [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
                     #                                           , self.candidate_pair_probability, self.merged], feed_dict)
 

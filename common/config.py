@@ -18,7 +18,7 @@ phrase_max_size = 20 # بیشترین تعداد کلمات یک عبارت
 
 phrase_max_gap = 100 # تعداد کلماتی که می‌تواند بین دو عبارتی که هم‌مرجع هم هستند فاصله بیفتد
 
-keep_phrase_ratio = 1000
+keep_phrase_ratio = 100
 
 max_epoch_number = 50
 

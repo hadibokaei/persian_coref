@@ -267,5 +267,17 @@ def get_all_files(path, format):
             files.append(file_path)
     return files
 
+def convert_pairs_to_clusters(pairs):
+    clusters = []
+    for pair in pairs:
+        found = False
+        for i in range(len(clusters)):
+            cluster = clusters[i]
+            if pair[0] in cluster or pair[1] in cluster:
+                clusters[i].update(pair)
+                found = True
 
+        if not found:
+            clusters.append(set(pair))
+    return clusters
 
