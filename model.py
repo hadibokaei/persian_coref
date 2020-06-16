@@ -113,7 +113,7 @@ class CorefModel(object):
                 sequence_length=self.phrase_length,
                 dtype=tf.float32)
             self.phrase_rep = tf.concat([output_fw, output_bw], axis=-1) # shape = [# of candidate phrases, 2 * lstm hidden size]
-            tf.summary.histogram("phrase representation", self.phrase_rep)
+            # tf.summary.histogram("phrase representation", self.phrase_rep)
 
     def add_fcn_phrase(self):
 
@@ -205,7 +205,7 @@ class CorefModel(object):
 
     def add_final_train(self):
         self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
-        self.final_train = tf.train.AdamOptimizer(learning_rate=0.01).minimize(self.final_loss)
+        self.final_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.final_loss)
 
     def train_phrase_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number, learning_rate):
         global_step = 0
@@ -426,19 +426,12 @@ class CorefModel(object):
                     [_, loss, pair_probability, pair_indices, summary] = \
                         self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged], feed_dict)
 
-                    print(pair_indices)
-                    print(pair_probability)
                     extracted_pairs = pair_indices[pair_probability>0.5]
                     predicted_clusters = convert_pairs_to_clusters(extracted_pairs)
                     gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
 
                     print(predicted_clusters)
                     print(gold_clusters)
-
-
-
-
-
 
                     # [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
                     #                                           , self.candidate_pair_probability, self.merged], feed_dict)
