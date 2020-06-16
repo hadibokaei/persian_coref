@@ -152,11 +152,21 @@ class CorefModel(object):
         f = tf.reshape(zf, [-1, 2])
         f = tf.cast(f, tf.int32)
         f = tf.gather_nd(f, tf.where(tf.arg_max(f, 1)))
-        f_ = tf.expand_dims(f, 2)
 
+        num_whole = tf.shape(f)[0]
+        num_gold = tf.shape(self.pair_gold)[0]
+        selected_indices = tf.random.uniform(shape=[num_gold], maxval=num_whole, dtype=tf.int32)
 
-        self.pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, f_), shape=[tf.shape(f_)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
-        self.pair_indices = f                                                                                         # shape = [# of candidate pairs, 2]
+        selected_indices = tf.expand_dims(selected_indices, 1)
+
+        selected_pairs = tf.squeeze(tf.gather_nd(f, selected_indices))
+
+        selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, self.pair_gold], axis=0))
+        selected_pairs_ = tf.expand_dims(selected_pairs, 2)
+
+        self.pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, selected_pairs_), shape=[tf.shape(selected_pairs_)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
+        self.pair_indices = selected_pairs                                                                                         # shape = [# of candidate pairs, 2]
+        self.out = self.pair_indices
 
     def add_fcn_pair(self):
         dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.pair_rep)
@@ -423,8 +433,8 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pair_probability, pair_indices, summary] = \
-                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged], feed_dict)
+                    [_, loss, pair_probability, pair_indices, summary, out] = \
+                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged, self.out], feed_dict)
 
                     extracted_pairs = pair_indices[pair_probability>0.5]
                     predicted_clusters = convert_pairs_to_clusters(extracted_pairs)
