@@ -55,7 +55,6 @@ except Exception as e:
     logger.info("there is no checkpoint. first run the training script...")
     epoch_number = 0
 
-model.evaluate_phrase_identification(word_embedding, train_files_path)
 
 
 
