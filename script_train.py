@@ -60,7 +60,7 @@ except Exception as e:
 
 # model.train_phrase_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.0001)
 
-model.train_pair_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.0001)
+model.train_pair_identification(word_embedding, train_files_path[100:], validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.0001)
 
 
 # sess = tf.InteractiveSession()
