@@ -231,7 +231,6 @@ class CorefModel(object):
                 global_step += 1
 
                 file = train_files_path[batch_number]
-                print(file)
                 [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
                 if len(doc_word) == 0:
                     print("skip this file (zero length document): {}".format(file))
@@ -302,8 +301,8 @@ class CorefModel(object):
                     precision = precision_score(gold, pred) * 100
                     recall = recall_score(gold, pred) * 100
                     f1_measure = f1_score(gold, pred) * 100
-                    logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}"
-                                .format(epoch, batch_number, loss, precision, recall, f1_measure))
+                    logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
+                                .format(epoch, batch_number, loss, precision, recall, f1_measure, file))
                 except Exception as e:
                     print(e)
 
@@ -625,7 +624,6 @@ class CorefModel(object):
         for doc_num in range(len(test_files_path)):
 
             file = test_files_path[doc_num]
-            print(file)
             [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
 
             if len(doc_word) == 0:
@@ -670,7 +668,7 @@ class CorefModel(object):
                 all_recall.append(recall)
                 f1_measure = f1_score(gold, pred) * 100
                 all_f1.append(f1_measure)
-                logger.info("{}/{}: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(doc_num, len(test_files_path), precision, recall, f1_measure))
+                logger.info("{}/{}: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})".format(doc_num, len(test_files_path), precision, recall, f1_measure, file))
             except Exception as e:
                 print(e)
 
