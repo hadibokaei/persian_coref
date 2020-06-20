@@ -245,26 +245,26 @@ class CorefModel(object):
                 current_char_ids = doc_char
                 current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
 
-                current_gold_phrase = np.array(gold_phrase)
-                current_phrase_word = np.array(phrase_word)
-                current_phrase_word_len = np.array(phrase_word_len)
-                num_posetive = np.sum(current_gold_phrase)
-                num_negatives = len(current_gold_phrase) - num_posetive
-                k = num_negatives
-                # negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=k))
-                negative_indices = np.squeeze(np.argwhere(current_gold_phrase == 0))
-                posetive_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 1)), k=k))
-                # posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
-                all_indices = np.concatenate([negative_indices, posetive_indices])
-                np.random.shuffle(all_indices)
-                print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_phrase)))
-                current_doc_phrase_indices = current_phrase_word[all_indices]
-                current_doc_gold_phrases = current_gold_phrase[all_indices]
-                current_doc_phrase_length = current_phrase_word_len[all_indices]
+                # current_gold_phrase = np.array(gold_phrase)
+                # current_phrase_word = np.array(phrase_word)
+                # current_phrase_word_len = np.array(phrase_word_len)
+                # num_posetive = np.sum(current_gold_phrase)
+                # num_negatives = len(current_gold_phrase) - num_posetive
+                # k = num_negatives
+                # # negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=k))
+                # negative_indices = np.squeeze(np.argwhere(current_gold_phrase == 0))
+                # posetive_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 1)), k=k))
+                # # posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
+                # all_indices = np.concatenate([negative_indices, posetive_indices])
+                # np.random.shuffle(all_indices)
+                # print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_phrase)))
+                # current_doc_phrase_indices = current_phrase_word[all_indices]
+                # current_doc_gold_phrases = current_gold_phrase[all_indices]
+                # current_doc_phrase_length = current_phrase_word_len[all_indices]
 
-                # current_doc_phrase_indices = phrase_word
-                # current_doc_gold_phrases = gold_phrase
-                # current_doc_phrase_length = phrase_word_len
+                current_doc_phrase_indices = phrase_word
+                current_doc_gold_phrases = gold_phrase
+                current_doc_phrase_length = phrase_word_len
 
 
                 feed_dict = {
@@ -276,12 +276,12 @@ class CorefModel(object):
                     self.phrase_indices: current_doc_phrase_indices,
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
-                    self.dropout_rate: 1,
+                    self.dropout_rate: 0.5,
                     self.learning_rate: learning_rate
                 }
                 try:
-                    # [pred, _, loss, summary] = self.sess.run([self.candidate_phrase_probability, self.phrase_identification_train, self.phrase_identification_loss, self.merged], feed_dict)
-                    [pred] = self.sess.run([self.candidate_phrase_probability], feed_dict)
+                    [pred, _, loss, summary] = self.sess.run([self.candidate_phrase_probability, self.phrase_identification_train, self.phrase_identification_loss, self.merged], feed_dict)
+                    # [pred] = self.sess.run([self.candidate_phrase_probability], feed_dict)
 
                     # self.train_writer.add_summary(summary, global_step)
                     pred[pred > 0.5] = 1
@@ -301,10 +301,10 @@ class CorefModel(object):
                     precision = precision_score(gold, pred) * 100
                     recall = recall_score(gold, pred) * 100
                     f1_measure = f1_score(gold, pred) * 100
-                    # logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
-                    #             .format(epoch, batch_number, loss, precision, recall, f1_measure, file))
                     logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
-                                .format(epoch, batch_number, 0, precision, recall, f1_measure, file))
+                                .format(epoch, batch_number, loss, precision, recall, f1_measure, file))
+                    # logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
+                    #             .format(epoch, batch_number, 0, precision, recall, f1_measure, file))
                 except Exception as e:
                     print(e)
 
