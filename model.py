@@ -476,8 +476,8 @@ class CorefModel(object):
                     try:
                         # logger.info("epoch:{:3d} batch:{:4d} loss:{:11.2f} precision:{:6.2f} recall:{:6.2f} f1:{:6.2f}"
                         #             .format(epoch, batch_number, loss, precision, recall, f1_measure))
-                        logger.info("epoch:{:3d} batch:{:4d} loss:{:11.2f} ({})"
-                                    .format(epoch, batch_number, loss, file))
+                        logger.info("epoch:{:3d} batch:{:4d} loss:{:11.2f} ({},{})"
+                                    .format(epoch, batch_number, loss, file, out4))
                     except Exception as e:
                         print("here:{}".format(e))
                         logger.info("epoch:{:3d} batch:{:4d}".format(epoch, batch_number))
