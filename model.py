@@ -668,6 +668,7 @@ class CorefModel(object):
                 all_recall.append(recall)
                 f1_measure = f1_score(gold, pred) * 100
                 all_f1.append(f1_measure)
+                logger.info("{}/{}: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(doc_num, len(test_files_path), precision, recall, f1_measure))
             except Exception as e:
                 print(e)
 
@@ -675,8 +676,7 @@ class CorefModel(object):
         avg_recall = np.average(all_recall)
         avg_f1 = np.average(all_f1)
 
-        logger.info(
-            "precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(avg_precision, avg_recall, avg_f1))
+        logger.info("precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(avg_precision, avg_recall, avg_f1))
 
 
 
