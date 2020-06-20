@@ -153,8 +153,11 @@ class CorefModel(object):
         f = tf.cast(f, tf.int32)
         f = tf.gather_nd(f, tf.where(tf.arg_max(f, 1)))
 
-        num_whole = tf.shape(f)[0]
-        num_gold = tf.shape(self.pair_gold)[0]
+        selected_pairs = f
+        selected_pairs_ = tf.expand_dims(selected_pairs, 2)
+
+        # num_whole = tf.shape(f)[0]
+        # num_gold = tf.shape(self.pair_gold)[0]
 
         # selected_indices = tf.random.uniform(shape=[num_gold], maxval=num_whole, dtype=tf.int32)
         # selected_indices = tf.expand_dims(selected_indices, 1)
@@ -162,15 +165,14 @@ class CorefModel(object):
         # selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, self.pair_gold], axis=0))
         # selected_pairs_ = tf.expand_dims(selected_pairs, 2)
 
-        selected_indices = tf.random.uniform(shape=[num_whole], maxval=num_gold, dtype=tf.int32)
-        selected_indices = tf.expand_dims(selected_indices, 1)
-        selected_pairs = tf.squeeze(tf.gather_nd(self.pair_gold, selected_indices))
-        selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, f], axis=0))
-        selected_pairs_ = tf.expand_dims(selected_pairs, 2)
+        # selected_indices = tf.random.uniform(shape=[num_whole], maxval=num_gold, dtype=tf.int32)
+        # selected_indices = tf.expand_dims(selected_indices, 1)
+        # selected_pairs = tf.squeeze(tf.gather_nd(self.pair_gold, selected_indices))
+        # selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, f], axis=0))
+        # selected_pairs_ = tf.expand_dims(selected_pairs, 2)
 
         self.pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, selected_pairs_), shape=[tf.shape(selected_pairs_)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
         self.pair_indices = selected_pairs                                                                                         # shape = [# of candidate pairs, 2]
-        self.out = self.pair_indices
 
     def add_fcn_pair(self):
         dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.pair_rep)
@@ -204,7 +206,16 @@ class CorefModel(object):
         gold_pair_indices = tf.expand_dims(self.pair_gold, 0)
         pred_pair_indices = tf.expand_dims(self.pair_indices, 1)
         c = tf.math.abs(gold_pair_indices-pred_pair_indices)
-        d  = tf.reduce_min(tf.reduce_sum(c, 2), 1)  #shape = [# of pruned candidate pairs]
+        d = tf.reduce_min(tf.reduce_sum(c, 2), 1)  #shape = [# of pruned candidate pairs]
+
+        positive_weight = tf.cast(tf.shape(self.pair_indices)[0]/tf.shape(self.pair_gold)[0], tf.float32)
+
+        weights = tf.where(d > 0, tf.cast(tf.ones_like(d), tf.float32), tf.cast(tf.ones_like(d), tf.float32) * positive_weight)
+
+        self.out1 = gold_pair_indices
+        self.out2 = pred_pair_indices
+        self.out3 = d
+        self.out4 = positive_weight
 
         # pair_gold = tf.cast((d > 0), tf.int32)
         # gold = tf.expand_dims(tf.to_float(pair_gold),1)
@@ -439,8 +450,9 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pair_probability, pair_indices, summary] = \
-                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged], feed_dict)
+                    [_, loss, pair_probability, pair_indices, summary, out1,out2,out3, out4] = \
+                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged
+                                          , self.out1, self.out2, self.out3, self.out4], feed_dict)
 
                     extracted_pairs = pair_indices[pair_probability>0.5]
                     predicted_clusters = convert_pairs_to_clusters(extracted_pairs)
