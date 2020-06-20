@@ -155,7 +155,7 @@ class CorefModel(object):
 
         num_whole = tf.shape(f)[0]
         num_gold = tf.shape(self.pair_gold)[0]
-        selected_indices = tf.random.uniform(shape=[num_gold], maxval=num_whole, dtype=tf.int32)
+        selected_indices = tf.random.uniform(shape=[num_gold*10], maxval=num_whole, dtype=tf.int32)
 
         selected_indices = tf.expand_dims(selected_indices, 1)
 
@@ -433,8 +433,8 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pair_probability, pair_indices, summary, out] = \
-                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged, self.out], feed_dict)
+                    [_, loss, pair_probability, pair_indices, summary] = \
+                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged], feed_dict)
 
                     extracted_pairs = pair_indices[pair_probability>0.5]
                     predicted_clusters = convert_pairs_to_clusters(extracted_pairs)
