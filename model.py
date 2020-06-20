@@ -276,7 +276,7 @@ class CorefModel(object):
                     self.phrase_indices: current_doc_phrase_indices,
                     self.gold_phrases: current_doc_gold_phrases,
                     self.phrase_length: current_doc_phrase_length,
-                    self.dropout_rate: 0,
+                    self.dropout_rate: 1,
                     self.learning_rate: learning_rate
                 }
                 try:
