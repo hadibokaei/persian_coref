@@ -280,8 +280,7 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pred, summary] = self.sess.run([self.phrase_identification_train, self.phrase_identification_loss
-                                                                 , self.candidate_phrase_probability, self.merged], feed_dict)
+                    [pred, _, loss, summary] = self.sess.run([self.candidate_phrase_probability, self.phrase_identification_train, self.phrase_identification_loss, self.merged], feed_dict)
 
                     self.train_writer.add_summary(summary, global_step)
                     pred[pred > 0.5] = 1
