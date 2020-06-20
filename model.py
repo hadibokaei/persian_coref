@@ -224,7 +224,7 @@ class CorefModel(object):
         # pred = tf.expand_dims(self.candidate_phrase_logit, 1)
         # pred_2d = tf.concat([pred,1-pred],1)
 
-        self.pair_identification_loss = -tf.reduce_mean(tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
+        self.pair_identification_loss = -tf.reduce_mean(weights*tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
 
