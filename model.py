@@ -155,13 +155,17 @@ class CorefModel(object):
 
         num_whole = tf.shape(f)[0]
         num_gold = tf.shape(self.pair_gold)[0]
-        selected_indices = tf.random.uniform(shape=[num_gold], maxval=num_whole, dtype=tf.int32)
 
+        # selected_indices = tf.random.uniform(shape=[num_gold], maxval=num_whole, dtype=tf.int32)
+        # selected_indices = tf.expand_dims(selected_indices, 1)
+        # selected_pairs = tf.squeeze(tf.gather_nd(f, selected_indices))
+        # selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, self.pair_gold], axis=0))
+        # selected_pairs_ = tf.expand_dims(selected_pairs, 2)
+
+        selected_indices = tf.random.uniform(shape=[num_whole], maxval=num_gold, dtype=tf.int32)
         selected_indices = tf.expand_dims(selected_indices, 1)
-
-        selected_pairs = tf.squeeze(tf.gather_nd(f, selected_indices))
-
-        selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, self.pair_gold], axis=0))
+        selected_pairs = tf.squeeze(tf.gather_nd(self.pair_gold, selected_indices))
+        selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, f], axis=0))
         selected_pairs_ = tf.expand_dims(selected_pairs, 2)
 
         self.pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, selected_pairs_), shape=[tf.shape(selected_pairs_)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
