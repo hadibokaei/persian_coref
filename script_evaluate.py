@@ -51,19 +51,11 @@ try:
     file_name = model.restore_graph()
     splitted_file_name = file_name.split("-")
     epoch_number = int(splitted_file_name[-1]) + 1
-    logger.info("the last checkpoint is loaded from {}. learning will be continued...".format(file_name))
+    logger.info("the last checkpoint is loaded from {}. evaluation will be started...".format(file_name))
 except Exception as e:
-    logger.info("there is no checkpoint. learning is started from scratch...")
+    logger.info("there is no checkpoint. first run the training script...")
     epoch_number = 0
 
-# model.train_phrase_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.001)
-
-model.train_pair_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=lr)
-
-
-# sess = tf.InteractiveSession()
-# sess.run(tf.global_variables_initializer())
-# print(model.gold_phrases.eval())
-# print(np.shape(model.gold_phrases.eval()))
+model.train_phrase_identification(word_embedding, validation_files_path)
 
 
