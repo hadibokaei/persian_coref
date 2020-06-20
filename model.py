@@ -155,7 +155,7 @@ class CorefModel(object):
 
         num_whole = tf.shape(f)[0]
         num_gold = tf.shape(self.pair_gold)[0]
-        selected_indices = tf.random.uniform(shape=[num_gold*10], maxval=num_whole, dtype=tf.int32)
+        selected_indices = tf.random.uniform(shape=[num_gold*3], maxval=num_whole, dtype=tf.int32)
 
         selected_indices = tf.expand_dims(selected_indices, 1)
 
