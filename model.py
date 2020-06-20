@@ -179,7 +179,7 @@ class CorefModel(object):
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(dropped_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
         # tf.summary.histogram("pair output layer", dense_output)
         dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
-        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1, activation='elu')(dropped_dense_output)) # shape = [# of pruned candidate pairs]
+        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1)(dropped_dense_output)) # shape = [# of pruned candidate pairs]
         self.candidate_pair_probability = tf.math.sigmoid(self.candidate_pair_logit)  # shape = [# of pruned candidate pairs]
         # self.candidate_pair_probability = tf.math.softmax(self.candidate_pair_logit)
         pred = tf.to_int32(self.candidate_pair_probability > 0.5)
