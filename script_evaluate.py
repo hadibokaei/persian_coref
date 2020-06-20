@@ -50,7 +50,7 @@ try:
     splitted_file_name = file_name.split("-")
     epoch_number = int(splitted_file_name[-1]) + 1
     logger.info("the last checkpoint is loaded from {}. evaluation will be started...".format(file_name))
-    model.evaluate_phrase_identification(word_embedding, validation_files_path)
+    model.evaluate_phrase_identification(word_embedding, train_files_path)
 except Exception as e:
     logger.info("there is no checkpoint. first run the training script...")
     epoch_number = 0
