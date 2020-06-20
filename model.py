@@ -215,7 +215,7 @@ class CorefModel(object):
         self.out1 = gold_pair_indices
         self.out2 = pred_pair_indices
         self.out3 = d
-        self.out4 = positive_weight
+        self.out4 = weights
 
         # pair_gold = tf.cast((d > 0), tf.int32)
         # gold = tf.expand_dims(tf.to_float(pair_gold),1)
@@ -224,7 +224,7 @@ class CorefModel(object):
         # pred = tf.expand_dims(self.candidate_phrase_logit, 1)
         # pred_2d = tf.concat([pred,1-pred],1)
 
-        self.pair_identification_loss = -tf.reduce_mean(weights*tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
+        self.pair_identification_loss = -tf.reduce_sum(weights*tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
 
