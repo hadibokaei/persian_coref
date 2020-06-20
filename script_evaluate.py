@@ -6,15 +6,12 @@ from os.path import isdir, isfile, join
 from common import config
 import sys
 
-lr = float(sys.argv[1])
-
-
 data_files_path = []
-data_files_path += get_all_files(config.path_data_train, '.npz')
+data_files_path += get_all_files(config.path_data_train, '.pcl')
 for file_name in listdir(config.path_data_train):
     file_path = join(config.path_data_train, file_name)
     if isdir(file_path):
-        data_files_path += get_all_files(file_path, '.npz')
+        data_files_path += get_all_files(file_path, '.pcl')
 
 num_files = len(data_files_path)
 num_train_file = int(0.99*num_files)
@@ -43,7 +40,8 @@ else:
 
 model = CorefModel(word_vocab_size=vocab.last_word_index + 1, char_vocab_size=vocab.char_size, word_embedding_dimension=config.word_embedding_dimension
                    , char_embedding_dimension=config.char_embedding_dimension, max_word_length=config.word_max_size, conv_filter_num=2, conv_filter_size=[2,3,4,5]
-                   , lstm_unit_size=config.lstm_hidden_size, max_phrase_length=config.phrase_max_size, dir_tensoboard_log = config.path_tensorboard, dir_checkpoint=config.path_checkpoints)
+                   , lstm_unit_size=config.lstm_hidden_size, max_phrase_length=config.phrase_max_size
+                   , dir_tensoboard_log = config.path_tensorboard, dir_checkpoint=config.path_checkpoints, keep_phrase_ratio = config.keep_phrase_ratio)
 
 model.build_graph()
 
