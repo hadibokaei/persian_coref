@@ -231,6 +231,7 @@ class CorefModel(object):
                 global_step += 1
 
                 file = train_files_path[batch_number]
+                print(file)
                 [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
                 if len(doc_word) == 0:
                     print("skip this file (zero length document): {}".format(file))
@@ -624,6 +625,7 @@ class CorefModel(object):
         for doc_num in range(len(test_files_path)):
 
             file = test_files_path[doc_num]
+            print(file)
             [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
 
             if len(doc_word) == 0:

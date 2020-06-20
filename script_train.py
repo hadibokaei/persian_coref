@@ -58,9 +58,9 @@ except Exception as e:
     logger.info("there is no checkpoint. learning is started from scratch...")
     epoch_number = 0
 
-# model.train_phrase_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.0001)
+model.train_phrase_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.0001)
 
-model.train_pair_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.0001)
+# model.train_pair_identification(word_embedding, train_files_path, validation_files_path, epoch_start=epoch_number, max_epoch_number=1000, learning_rate=0.0001)
 
 
 # sess = tf.InteractiveSession()
