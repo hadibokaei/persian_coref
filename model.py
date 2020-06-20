@@ -283,7 +283,7 @@ class CorefModel(object):
                     # [pred, _, loss, summary] = self.sess.run([self.candidate_phrase_probability, self.phrase_identification_train, self.phrase_identification_loss, self.merged], feed_dict)
                     [pred] = self.sess.run([self.candidate_phrase_probability], feed_dict)
 
-                    self.train_writer.add_summary(summary, global_step)
+                    # self.train_writer.add_summary(summary, global_step)
                     pred[pred > 0.5] = 1
                     pred[pred <= 0.5] = 0
 
@@ -301,8 +301,10 @@ class CorefModel(object):
                     precision = precision_score(gold, pred) * 100
                     recall = recall_score(gold, pred) * 100
                     f1_measure = f1_score(gold, pred) * 100
+                    # logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
+                    #             .format(epoch, batch_number, loss, precision, recall, f1_measure, file))
                     logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
-                                .format(epoch, batch_number, loss, precision, recall, f1_measure, file))
+                                .format(epoch, batch_number, 0, precision, recall, f1_measure, file))
                 except Exception as e:
                     print(e)
 
