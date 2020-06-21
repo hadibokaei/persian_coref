@@ -433,7 +433,7 @@ class CorefModel(object):
                 current_doc_gold_phrases = gold_phrase
                 current_doc_phrase_length = phrase_word_len
 
-                current_doc_pair_gold = [[gold_2_local_phrase_id_map[a] for a in x] for x in gold_phrase_id_pair]
+                current_doc_pair_gold = [[gold_2_local_phrase_id_map[a] for a in x if a in gold_2_local_phrase_id_map.keys()] for x in gold_phrase_id_pair]
                 # z = [[[gold_2_local_phrase_id_map[x], gold_2_local_phrase_id_map[y]] for x in a for y in a if
                 #       x < y and x in gold_2_local_phrase_id_map.keys() and y in gold_2_local_phrase_id_map.keys()] for a
                 #      in clusters]
