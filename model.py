@@ -155,6 +155,7 @@ class CorefModel(object):
         self.pair_rep = tf.reshape(self.pair_rep
                         , shape=[tf.shape(self.pair_rep)[0], tf.shape(self.pair_rep)[1], 4*self.lstm_unit_size])    # shape = [num_of_pruned_phrases, num_of_pruned_phrases, 4 * lstm hidden size]
         self.pair_indices = selected_pairs                                                                          # shape = [num_of_pruned_phrases, num_of_pruned_phrases,  2]
+        self.indices = indices
 
     def add_fcn_pair(self):
         dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.pair_rep)
@@ -423,19 +424,21 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs] = \
+                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs, indices] = \
                         self.sess.run([self.pair_identification_train
                                           , self.pair_identification_loss
                                           , self.candidate_pair_probability
                                           , self.pair_indices
                                           , self.merged
                                           , self.predicted_pairs
+                                          , self.indices
                                        ], feed_dict)
 
                     predicted_clusters = convert_pairs_to_clusters(predicted_pairs)
                     gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
 
                     print(pair_indices)
+                    print(indices)
 
                     print(predicted_pairs)
                     print(predicted_clusters)
