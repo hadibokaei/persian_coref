@@ -173,10 +173,6 @@ class CorefModel(object):
 
     def add_phrase_loss_train(self):
 
-        gold = tf.expand_dims(tf.to_float(self.gold_phrases),1)
-
-        pred = tf.expand_dims(self.candidate_phrase_logit, 1)
-
         self.phrase_identification_loss = -tf.reduce_mean(tf.math.log(tf.where(self.gold_phrases>0
                                                                               , self.candidate_phrase_probability
                                                                               , 1-self.candidate_phrase_probability)))
@@ -194,6 +190,7 @@ class CorefModel(object):
         self.pair_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability_flat, self.candidate_pair_probability_flat)))
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
+        self.out = d
 
     def add_final_train(self):
         self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
@@ -265,23 +262,21 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs, indices,pair_rep] = \
+                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs, indices,pair_rep, out] = \
                         self.sess.run([self.pair_identification_train
                                           , self.pair_identification_loss
-                                          , self.candidate_pair_probability
+                                          , self.candidate_pair_probability_flat
                                           , self.pair_indices
                                           , self.merged
                                           , self.predicted_pairs
-                                          , self.indices, self.pair_rep
+                                          , self.indices, self.pair_rep, self.out
                                        ], feed_dict)
 
                     predicted_clusters = convert_pairs_to_clusters(predicted_pairs)
                     gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
 
-                    print(pair_indices)
-                    print(indices)
-                    print(current_doc_pair_gold)
-                    print(pair_rep)
+                    print(pair_probability)
+                    print(out)
 
                     print(predicted_pairs)
                     # print(predicted_clusters)
