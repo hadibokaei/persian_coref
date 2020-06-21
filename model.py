@@ -439,6 +439,7 @@ class CorefModel(object):
 
                     print(pair_indices)
                     print(indices)
+                    print(current_doc_pair_gold)
 
                     print(predicted_pairs)
                     print(predicted_clusters)
