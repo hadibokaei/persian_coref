@@ -221,18 +221,7 @@ class CorefModel(object):
         c = tf.math.abs(gold_pair_indices-pred_pair_indices)
         d = tf.reduce_min(tf.reduce_sum(c, 2), 1)  #shape = [# of pruned candidate pairs]
 
-        positive_weight = tf.cast(tf.shape(self.pair_indices_flat)[0]/tf.shape(self.pair_gold)[0], tf.float32)
-
-        weights = tf.where(d > 0, tf.cast(tf.ones_like(d), tf.float32), tf.cast(tf.ones_like(d), tf.float32) * positive_weight)
-
-        # pair_gold = tf.cast((d > 0), tf.int32)
-        # gold = tf.expand_dims(tf.to_float(pair_gold),1)
-        # gold_2d = tf.concat([gold,1-gold],1)
-        #
-        # pred = tf.expand_dims(self.candidate_phrase_logit, 1)
-        # pred_2d = tf.concat([pred,1-pred],1)
-
-        self.pair_identification_loss = -tf.reduce_sum(weights*tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability_flat, self.candidate_pair_probability_flat)))
+        self.pair_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability_flat, self.candidate_pair_probability_flat)))
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
 
