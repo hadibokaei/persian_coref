@@ -104,8 +104,12 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
                     single_tag = single_word.split()[2]
                     if is_number(single_tag):
                         current_id = int(single_tag)
+                        if current_id == 0:
+                            a = 2
                         prev_id = int(single_word.split()[3])
                         phrase_id.append(current_id)
+                        if current_id == prev_id:
+                            prev_id = 0
                         phrase_id_pair.append([current_id, prev_id])
                         gold_phrase.append(1)
                     else:
@@ -128,6 +132,8 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
                         if all_other_word_is_middle:
                             current_id = int(start_word.split()[2].replace("(*",""))
                             prev_id = int(start_word.split()[3].replace("(*",""))
+                            if current_id == prev_id:
+                                prev_id = 0
                             phrase_id.append(current_id)
                             phrase_id_pair.append([current_id, prev_id])
                             gold_phrase.append(1)
