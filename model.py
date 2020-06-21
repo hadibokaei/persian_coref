@@ -199,165 +199,6 @@ class CorefModel(object):
         self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
         self.final_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.final_loss)
 
-    def train_phrase_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number, learning_rate):
-        global_step = 0
-        for epoch in range(epoch_start, max_epoch_number):
-            stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
-            self.sess.run(tf.variables_initializer(stream_vars_valid))
-            for batch_number in range(len(train_files_path)):
-
-                global_step += 1
-
-                file = train_files_path[batch_number]
-                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _, _] = load_data(file)
-                if len(doc_word) == 0:
-                    print("skip this file (zero length document): {}".format(file))
-                    continue
-                if np.sum(gold_phrase) == 0:
-                    print("skip this file (no phrase): {}".format(file))
-                    continue
-
-                current_word_ids = doc_word
-                current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
-
-                current_char_ids = doc_char
-                current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
-
-                current_gold_phrase = np.array(gold_phrase)
-                current_phrase_word = np.array(phrase_word)
-                current_phrase_word_len = np.array(phrase_word_len)
-                num_posetive = np.sum(current_gold_phrase)
-                num_negatives = len(current_gold_phrase) - num_posetive
-                k = num_negatives
-                # negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=k))
-                negative_indices = np.squeeze(np.argwhere(current_gold_phrase == 0))
-                posetive_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 1)), k=k))
-                # posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
-                all_indices = np.concatenate([negative_indices, posetive_indices])
-                np.random.shuffle(all_indices)
-                print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_phrase)))
-                current_doc_phrase_indices = current_phrase_word[all_indices]
-                current_doc_gold_phrases = current_gold_phrase[all_indices]
-                current_doc_phrase_length = current_phrase_word_len[all_indices]
-
-                # current_doc_phrase_indices = phrase_word
-                # current_doc_gold_phrases = gold_phrase
-                # current_doc_phrase_length = phrase_word_len
-
-
-                feed_dict = {
-                    self.word_ids: current_word_ids,
-                    self.word_embedding: word_embedding,
-                    self.sentence_length: current_sentence_length,
-                    self.char_ids: current_char_ids,
-                    self.word_length: current_word_length,
-                    self.phrase_indices: current_doc_phrase_indices,
-                    self.gold_phrases: current_doc_gold_phrases,
-                    self.phrase_length: current_doc_phrase_length,
-                    self.dropout_rate: 0.5,
-                    self.learning_rate: learning_rate
-                }
-                try:
-                    [pred, _, loss, summary] = self.sess.run([self.candidate_phrase_probability, self.phrase_identification_train, self.phrase_identification_loss, self.merged], feed_dict)
-                    # [pred] = self.sess.run([self.candidate_phrase_probability], feed_dict)
-
-                    # self.train_writer.add_summary(summary, global_step)
-                    pred[pred > 0.5] = 1
-                    pred[pred <= 0.5] = 0
-
-                    gold = np.array(current_doc_gold_phrases)
-
-                    pred_indices = np.where(pred == 1)
-                    gold_indices = np.where(gold == 1)
-
-
-                    # print(pred_indices)
-                    # print(np.shape(pred_indices))
-                    # print(gold_indices)
-                    # print(np.shape(gold_indices))
-
-                    precision = precision_score(gold, pred) * 100
-                    recall = recall_score(gold, pred) * 100
-                    f1_measure = f1_score(gold, pred) * 100
-                    logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
-                                .format(epoch, batch_number, loss, precision, recall, f1_measure, file))
-                    # logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
-                    #             .format(epoch, batch_number, 0, precision, recall, f1_measure, file))
-                except Exception as e:
-                    print(e)
-
-            save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
-                                        global_step=int(epoch), write_meta_graph=False)
-            logger.info("model is saved in: {}".format(save_path))
-
-            all_precision = []
-            all_recall = []
-            all_f1 = []
-            stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
-            self.sess.run(tf.variables_initializer(stream_vars_valid))
-            for doc_num in range(len(validation_files_path)):
-
-
-                file = validation_files_path[doc_num]
-                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _, _] = load_data(file)
-
-                if len(doc_word) == 0:
-                    print("skip this file (zero length document): {}".format(file))
-                    continue
-                if np.sum(gold_phrase) == 0:
-                    print("skip this file (no phrase): {}".format(file))
-                    continue
-
-
-                current_word_ids = doc_word
-                current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
-
-                current_char_ids = doc_char
-                current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
-
-                current_doc_phrase_indices = phrase_word
-                current_doc_gold_phrases = gold_phrase
-                current_doc_phrase_length = phrase_word_len
-
-                feed_dict = {
-                    self.word_ids: current_word_ids,
-                    self.word_embedding: word_embedding,
-                    self.sentence_length: current_sentence_length,
-                    self.char_ids: current_char_ids,
-                    self.word_length: current_word_length,
-                    self.phrase_indices: current_doc_phrase_indices,
-                    self.gold_phrases: current_doc_gold_phrases,
-                    self.phrase_length: current_doc_phrase_length,
-                    self.dropout_rate: 0.0
-                }
-                try:
-                    [pred, summary] = self.sess.run([self.candidate_phrase_probability, self.merged], feed_dict)
-
-                    self.validation_writer.add_summary(summary, global_step)
-                    pred[pred > 0.5] = 1
-                    pred[pred <= 0.5] = 0
-
-                    gold = current_doc_gold_phrases
-
-                    precision = precision_score(gold, pred) * 100
-                    all_precision.append(precision)
-                    recall = recall_score(gold, pred) * 100
-                    all_recall.append(recall)
-                    f1_measure = f1_score(gold, pred) * 100
-                    all_f1.append(f1_measure)
-                except Exception as e:
-                    print(e)
-
-            avg_precision = np.average(all_precision)
-            avg_recall = np.average(all_recall)
-            avg_f1 = np.average(all_f1)
-
-            logger.info("==================================>epoch:{:3d} validation metrics: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
-
-    def restore_graph(self):
-        self.saver.restore(self.sess, tf.train.latest_checkpoint(self.dir_checkpoint))
-        return tf.train.latest_checkpoint(self.dir_checkpoint)
-
     def train_pair_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number, learning_rate):
 
         global_step = 0
@@ -424,23 +265,24 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs, indices] = \
+                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs, indices,pair_rep] = \
                         self.sess.run([self.pair_identification_train
                                           , self.pair_identification_loss
                                           , self.candidate_pair_probability
                                           , self.pair_indices
                                           , self.merged
                                           , self.predicted_pairs
-                                          , self.indices
+                                          , self.indices, self.pair_rep
                                        ], feed_dict)
 
                     predicted_clusters = convert_pairs_to_clusters(predicted_pairs)
                     gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
 
-                    # print(pair_indices)
-                    # print(indices)
-                    # print(current_doc_pair_gold)
-                    #
+                    print(pair_indices)
+                    print(indices)
+                    print(current_doc_pair_gold)
+                    print(pair_rep)
+
                     print(predicted_pairs)
                     # print(predicted_clusters)
                     # print(gold_clusters)
@@ -469,9 +311,9 @@ class CorefModel(object):
                 except Exception as e:
                     print("here:{}".format(e))
 
-            save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
-                                        global_step=int(epoch), write_meta_graph=False)
-            logger.info("model is saved in: {}".format(save_path))
+            # save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
+            #                             global_step=int(epoch), write_meta_graph=False)
+            # logger.info("model is saved in: {}".format(save_path))
             # all_precision = []
             # all_recall = []
             # all_f1 = []
@@ -677,6 +519,165 @@ class CorefModel(object):
         avg_f1 = np.average(all_f1)
 
         logger.info("precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(avg_precision, avg_recall, avg_f1))
+
+    def train_phrase_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number, learning_rate):
+        global_step = 0
+        for epoch in range(epoch_start, max_epoch_number):
+            stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
+            self.sess.run(tf.variables_initializer(stream_vars_valid))
+            for batch_number in range(len(train_files_path)):
+
+                global_step += 1
+
+                file = train_files_path[batch_number]
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _, _] = load_data(file)
+                if len(doc_word) == 0:
+                    print("skip this file (zero length document): {}".format(file))
+                    continue
+                if np.sum(gold_phrase) == 0:
+                    print("skip this file (no phrase): {}".format(file))
+                    continue
+
+                current_word_ids = doc_word
+                current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
+
+                current_char_ids = doc_char
+                current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
+
+                current_gold_phrase = np.array(gold_phrase)
+                current_phrase_word = np.array(phrase_word)
+                current_phrase_word_len = np.array(phrase_word_len)
+                num_posetive = np.sum(current_gold_phrase)
+                num_negatives = len(current_gold_phrase) - num_posetive
+                k = num_negatives
+                # negative_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 0)), k=k))
+                negative_indices = np.squeeze(np.argwhere(current_gold_phrase == 0))
+                posetive_indices = np.array(random.choices(np.squeeze(np.argwhere(current_gold_phrase == 1)), k=k))
+                # posetive_indices = np.squeeze(np.argwhere(current_gold_phrase == 1))
+                all_indices = np.concatenate([negative_indices, posetive_indices])
+                np.random.shuffle(all_indices)
+                print("+{}-{}:{}/{}".format(len(posetive_indices), len(negative_indices), len(all_indices), len(current_gold_phrase)))
+                current_doc_phrase_indices = current_phrase_word[all_indices]
+                current_doc_gold_phrases = current_gold_phrase[all_indices]
+                current_doc_phrase_length = current_phrase_word_len[all_indices]
+
+                # current_doc_phrase_indices = phrase_word
+                # current_doc_gold_phrases = gold_phrase
+                # current_doc_phrase_length = phrase_word_len
+
+
+                feed_dict = {
+                    self.word_ids: current_word_ids,
+                    self.word_embedding: word_embedding,
+                    self.sentence_length: current_sentence_length,
+                    self.char_ids: current_char_ids,
+                    self.word_length: current_word_length,
+                    self.phrase_indices: current_doc_phrase_indices,
+                    self.gold_phrases: current_doc_gold_phrases,
+                    self.phrase_length: current_doc_phrase_length,
+                    self.dropout_rate: 0.5,
+                    self.learning_rate: learning_rate
+                }
+                try:
+                    [pred, _, loss, summary] = self.sess.run([self.candidate_phrase_probability, self.phrase_identification_train, self.phrase_identification_loss, self.merged], feed_dict)
+                    # [pred] = self.sess.run([self.candidate_phrase_probability], feed_dict)
+
+                    # self.train_writer.add_summary(summary, global_step)
+                    pred[pred > 0.5] = 1
+                    pred[pred <= 0.5] = 0
+
+                    gold = np.array(current_doc_gold_phrases)
+
+                    pred_indices = np.where(pred == 1)
+                    gold_indices = np.where(gold == 1)
+
+
+                    # print(pred_indices)
+                    # print(np.shape(pred_indices))
+                    # print(gold_indices)
+                    # print(np.shape(gold_indices))
+
+                    precision = precision_score(gold, pred) * 100
+                    recall = recall_score(gold, pred) * 100
+                    f1_measure = f1_score(gold, pred) * 100
+                    logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
+                                .format(epoch, batch_number, loss, precision, recall, f1_measure, file))
+                    # logger.info("epoch:{:3d} batch:{:4d} loss:{:5.3f} precision:{:5.2f} recall:{:5.2f} f1:{:5.2f} ({})"
+                    #             .format(epoch, batch_number, 0, precision, recall, f1_measure, file))
+                except Exception as e:
+                    print(e)
+
+            save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
+                                        global_step=int(epoch), write_meta_graph=False)
+            logger.info("model is saved in: {}".format(save_path))
+
+            all_precision = []
+            all_recall = []
+            all_f1 = []
+            stream_vars_valid = [v for v in tf.local_variables() if 'metrics/' in v.name]
+            self.sess.run(tf.variables_initializer(stream_vars_valid))
+            for doc_num in range(len(validation_files_path)):
+
+
+                file = validation_files_path[doc_num]
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _, _] = load_data(file)
+
+                if len(doc_word) == 0:
+                    print("skip this file (zero length document): {}".format(file))
+                    continue
+                if np.sum(gold_phrase) == 0:
+                    print("skip this file (no phrase): {}".format(file))
+                    continue
+
+
+                current_word_ids = doc_word
+                current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
+
+                current_char_ids = doc_char
+                current_char_ids, current_word_length = pad_sequences(current_char_ids, 0, nlevels=2)
+
+                current_doc_phrase_indices = phrase_word
+                current_doc_gold_phrases = gold_phrase
+                current_doc_phrase_length = phrase_word_len
+
+                feed_dict = {
+                    self.word_ids: current_word_ids,
+                    self.word_embedding: word_embedding,
+                    self.sentence_length: current_sentence_length,
+                    self.char_ids: current_char_ids,
+                    self.word_length: current_word_length,
+                    self.phrase_indices: current_doc_phrase_indices,
+                    self.gold_phrases: current_doc_gold_phrases,
+                    self.phrase_length: current_doc_phrase_length,
+                    self.dropout_rate: 0.0
+                }
+                try:
+                    [pred, summary] = self.sess.run([self.candidate_phrase_probability, self.merged], feed_dict)
+
+                    self.validation_writer.add_summary(summary, global_step)
+                    pred[pred > 0.5] = 1
+                    pred[pred <= 0.5] = 0
+
+                    gold = current_doc_gold_phrases
+
+                    precision = precision_score(gold, pred) * 100
+                    all_precision.append(precision)
+                    recall = recall_score(gold, pred) * 100
+                    all_recall.append(recall)
+                    f1_measure = f1_score(gold, pred) * 100
+                    all_f1.append(f1_measure)
+                except Exception as e:
+                    print(e)
+
+            avg_precision = np.average(all_precision)
+            avg_recall = np.average(all_recall)
+            avg_f1 = np.average(all_f1)
+
+            logger.info("==================================>epoch:{:3d} validation metrics: precision:{:5.2f} recall:{:5.2f} f1:{:5.2f}".format(epoch, avg_precision, avg_recall, avg_f1))
+
+    def restore_graph(self):
+        self.saver.restore(self.sess, tf.train.latest_checkpoint(self.dir_checkpoint))
+        return tf.train.latest_checkpoint(self.dir_checkpoint)
 
 
 
