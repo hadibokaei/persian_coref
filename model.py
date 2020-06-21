@@ -441,9 +441,9 @@ class CorefModel(object):
                     # print(indices)
                     # print(current_doc_pair_gold)
                     #
-                    # print(predicted_pairs)
-                    print(predicted_clusters)
-                    print(gold_clusters)
+                    print(predicted_pairs)
+                    # print(predicted_clusters)
+                    # print(gold_clusters)
 
                     # [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
                     #                                           , self.candidate_pair_probability, self.merged], feed_dict)
