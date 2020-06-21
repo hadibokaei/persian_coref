@@ -437,13 +437,13 @@ class CorefModel(object):
                     predicted_clusters = convert_pairs_to_clusters(predicted_pairs)
                     gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
 
-                    print(pair_indices)
-                    print(indices)
-                    print(current_doc_pair_gold)
-
-                    print(predicted_pairs)
-                    print(predicted_clusters)
-                    print(gold_clusters)
+                    # print(pair_indices)
+                    # print(indices)
+                    # print(current_doc_pair_gold)
+                    #
+                    # print(predicted_pairs)
+                    # print(predicted_clusters)
+                    # print(gold_clusters)
 
                     # [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
                     #                                           , self.candidate_pair_probability, self.merged], feed_dict)
