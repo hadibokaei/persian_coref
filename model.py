@@ -95,10 +95,6 @@ class CorefModel(object):
                 dtype=tf.float32)
             lstm_output_tmp = tf.concat([outputs_fw, outputs_bw], axis=2) # shape = [# of sentences, max num of words in each sentence, 2 * lstm hidden size]
 
-        # cell_fw = tf.keras.layers.LSTM(units=self.lstm_unit_size, activation='relu', return_sequences=True)
-        # cell_bw = tf.keras.layers.LSTM(units=self.lstm_unit_size, activation='relu', return_sequences=True, go_backwards=True)
-        # lstm_output_tmp = tf.keras.layers.Bidirectional(layer=cell_fw, backward_layer=cell_bw, merge_mode='concat')(self.word_representation) # shape = [# of sentences, max num of words in each sentence, 2 * lstm hidden size]
-
         self.lstm_output = tf.concat([tf.expand_dims(tf.zeros_like(lstm_output_tmp[0]),0),lstm_output_tmp], axis = 0) # shape = [# of sentences + 1, max num of words in each sentence, 2 * lstm hidden size]
 
         self.candidate_phrases = tf.gather_nd(self.lstm_output, self.phrase_indices) # shape = [# of candidate phrases, max phrase length, 2 * lstm hidden size]
@@ -113,7 +109,6 @@ class CorefModel(object):
                 sequence_length=self.phrase_length,
                 dtype=tf.float32)
             self.phrase_rep = tf.concat([output_fw, output_bw], axis=-1) # shape = [# of candidate phrases, 2 * lstm hidden size]
-            # tf.summary.histogram("phrase representation", self.phrase_rep)
 
     def add_fcn_phrase(self):
 
@@ -151,42 +146,19 @@ class CorefModel(object):
         zf = z1f + z2f
         zf = tf.reverse(zf, axis=[2])
 
-        # f = tf.reshape(zf, [-1, 2])
-        # f = tf.cast(f, tf.int32)
-        # f = tf.gather_nd(f, tf.where(tf.arg_max(f, 1)))
-        # f = tf.reverse(f, axis=[1])
 
         selected_pairs = zf                                             #shape = [num_of_pruned_phrases, num_of_pruned_phrases, 2]
         selected_pairs_ = tf.expand_dims(selected_pairs, 3)             #shape = [num_of_pruned_phrases, num_of_pruned_phrases, 2, 1]
 
 
-        # num_whole = tf.shape(f)[0]
-        # num_gold = tf.shape(self.pair_gold)[0]
-
-        # selected_indices = tf.random.uniform(shape=[num_gold], maxval=num_whole, dtype=tf.int32)
-        # selected_indices = tf.expand_dims(selected_indices, 1)
-        # selected_pairs = tf.squeeze(tf.gather_nd(f, selected_indices))
-        # selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, self.pair_gold], axis=0))
-        # selected_pairs_ = tf.expand_dims(selected_pairs, 2)
-
-        # selected_indices = tf.random.uniform(shape=[num_whole], maxval=num_gold, dtype=tf.int32)
-        # selected_indices = tf.expand_dims(selected_indices, 1)
-        # selected_pairs = tf.squeeze(tf.gather_nd(self.pair_gold, selected_indices))
-        # selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, f], axis=0))
-        # selected_pairs_ = tf.expand_dims(selected_pairs, 2)
-
         self.pair_rep = tf.gather_nd(self.phrase_rep, selected_pairs_)
         self.pair_rep = tf.reshape(self.pair_rep
                         , shape=[tf.shape(self.pair_rep)[0], tf.shape(self.pair_rep)[1], 4*self.lstm_unit_size])    # shape = [num_of_pruned_phrases, num_of_pruned_phrases, 4 * lstm hidden size]
         self.pair_indices = selected_pairs                                                                          # shape = [num_of_pruned_phrases, num_of_pruned_phrases,  2]
-        # self.pair_rep = tf.reshape(self.pair_rep, shape=[-1, 4*self.lstm_unit_size])    # shape = [# of candidate pairs, 4 * lstm hidden size]
-        # self.pair_indices = tf.reshape(self.pair_rep, shape=[-1, 2])                        # shape = [# of candidate pairs, 2]
 
     def add_fcn_pair(self):
         dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.pair_rep)
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(dropped_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
-        # tf.summary.histogram("pair output layer", dense_output)
-        # dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
         self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1)(dense_output))              # shape = [num_of_pruned_phrases, num_of_pruned_phrases]
         self.candidate_pair_probability = tf.keras.layers.Softmax()(self.candidate_pair_logit)      # shape = [num_of_pruned_phrases, num_of_pruned_phrases]
 
@@ -201,15 +173,12 @@ class CorefModel(object):
     def add_phrase_loss_train(self):
 
         gold = tf.expand_dims(tf.to_float(self.gold_phrases),1)
-        gold_2d = tf.concat([gold,1-gold],1)
 
         pred = tf.expand_dims(self.candidate_phrase_logit, 1)
-        pred_2d = tf.concat([pred,1-pred],1)
 
         self.phrase_identification_loss = -tf.reduce_mean(tf.math.log(tf.where(self.gold_phrases>0
                                                                               , self.candidate_phrase_probability
                                                                               , 1-self.candidate_phrase_probability)))
-        # self.phrase_identification_loss = tf.losses.sigmoid_cross_entropy(gold_2d, pred_2d)
         tf.summary.scalar("phrase loss", self.phrase_identification_loss)
 
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.phrase_identification_loss)
@@ -455,7 +424,7 @@ class CorefModel(object):
                 }
                 try:
                     [_, loss, pair_probability, pair_indices, summary, predicted_pairs] = \
-                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged, self.predicted_pairs], feed_dict)
+                        self.sess.run([self.pair_identification_train, self.pair_identification_loss, self.candidate_pair_probability, self.pair_indices, self.merged, self.predicted_pairs], feed_dict)
 
                     predicted_clusters = convert_pairs_to_clusters(predicted_pairs)
                     gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
