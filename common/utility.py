@@ -166,7 +166,7 @@ def convert_to_numpy_array(input_file_name, output_file_name, vocab):
             clusters[-1].add(pair[0])
             clusters[-1].add(pair[1])
 
-    pickle.dump([doc_word,doc_char,phrase_word,phrase_word_len,gold_phrase,clusters,gold_2_local_phrase_id_map], open(output_file_name, "wb"))
+    pickle.dump([doc_word,doc_char,phrase_word,phrase_word_len,gold_phrase, phrase_id_pair,clusters,gold_2_local_phrase_id_map], open(output_file_name, "wb"))
 
 
 def pair_has_overlap(phrase1, phrase2):

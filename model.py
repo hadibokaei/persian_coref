@@ -141,6 +141,7 @@ class CorefModel(object):
 
         k = tf.cast(tf.shape(self.phrase_rep)[0] / self.keep_phrase_ratio, tf.int32)
         indices = tf.math.top_k(self.candidate_phrase_logit, k=k).indices
+        indices = tf.concat([indices,[0]], axis = 0)
         y = tf.zeros(tf.shape(indices), dtype=tf.int32)
 
         z1 = tf.stack([indices, y], axis=1)
@@ -149,12 +150,14 @@ class CorefModel(object):
         z2f = tf.expand_dims(z2, 1)
         zf = z1f + z2f
 
-        f = tf.reshape(zf, [-1, 2])
-        f = tf.cast(f, tf.int32)
-        f = tf.gather_nd(f, tf.where(tf.arg_max(f, 1)))
+        # f = tf.reshape(zf, [-1, 2])
+        # f = tf.cast(f, tf.int32)
+        # f = tf.gather_nd(f, tf.where(tf.arg_max(f, 1)))
+        # f = tf.reverse(f, axis=[1])
 
-        selected_pairs = f
-        selected_pairs_ = tf.expand_dims(selected_pairs, 2)
+        selected_pairs = zf                                             #shape = [num_of_pruned_phrases, num_of_pruned_phrases, 2]
+        selected_pairs_ = tf.expand_dims(selected_pairs, 3)             #shape = [num_of_pruned_phrases, num_of_pruned_phrases, 2, 1]
+
 
         # num_whole = tf.shape(f)[0]
         # num_gold = tf.shape(self.pair_gold)[0]
@@ -171,18 +174,23 @@ class CorefModel(object):
         # selected_pairs = tf.random.shuffle(tf.concat([selected_pairs, f], axis=0))
         # selected_pairs_ = tf.expand_dims(selected_pairs, 2)
 
-        self.pair_rep = tf.reshape(tf.gather_nd(self.phrase_rep, selected_pairs_), shape=[tf.shape(selected_pairs_)[0], 4*self.lstm_unit_size]) # shape = [# of candidate pairs, 4 * lstm hidden size]
-        self.pair_indices = selected_pairs                                                                                         # shape = [# of candidate pairs, 2]
+        self.pair_rep = tf.gather_nd(self.phrase_rep, selected_pairs_)
+        self.pair_rep = tf.reshape(self.pair_rep
+                        , shape=[tf.shape(self.pair_rep)[0], tf.shape(self.pair_rep)[1], 4*self.lstm_unit_size])    # shape = [num_of_pruned_phrases, num_of_pruned_phrases, 4 * lstm hidden size]
+        self.pair_indices = selected_pairs                                                                          # shape = [num_of_pruned_phrases, num_of_pruned_phrases,  2]
+        # self.pair_rep = tf.reshape(self.pair_rep, shape=[-1, 4*self.lstm_unit_size])    # shape = [# of candidate pairs, 4 * lstm hidden size]
+        # self.pair_indices = tf.reshape(self.pair_rep, shape=[-1, 2])                        # shape = [# of candidate pairs, 2]
 
     def add_fcn_pair(self):
         dropped_rep = tf.keras.layers.Dropout(rate = self.dropout_rate)(self.pair_rep)
         dense_output = tf.keras.layers.Dense(self.lstm_unit_size,activation='elu')(dropped_rep) # shape = [# of pruned candidate pairs, lstm hidden size]
         # tf.summary.histogram("pair output layer", dense_output)
-        dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
-        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1)(dropped_dense_output)) # shape = [# of pruned candidate pairs]
-        self.candidate_pair_probability = tf.math.sigmoid(self.candidate_pair_logit)  # shape = [# of pruned candidate pairs]
-        # self.candidate_pair_probability = tf.math.softmax(self.candidate_pair_logit)
-        pred = tf.to_int32(self.candidate_pair_probability > 0.5)
+        # dropped_dense_output = tf.keras.layers.Dropout(rate = self.dropout_rate)(dense_output)
+        self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1)(dense_output))              # shape = [num_of_pruned_phrases, num_of_pruned_phrases]
+        self.candidate_pair_probability = tf.keras.layers.Softmax()(self.candidate_pair_logit)      # shape = [num_of_pruned_phrases, num_of_pruned_phrases]
+
+        self.pair_indices = tf.reshape(self.pair_indices, shape=[-1,2])
+        self.candidate_pair_probability = tf.reshape(self.candidate_pair_probability, shape=[-1])
 
 
     def add_phrase_loss_train(self):
@@ -204,18 +212,13 @@ class CorefModel(object):
     def add_pair_loss_train(self):
 
         gold_pair_indices = tf.expand_dims(self.pair_gold, 0)
-        pred_pair_indices = tf.expand_dims(self.pair_indices, 1)
+        pred_pair_indices = tf.cast(tf.expand_dims(self.pair_indices, 1), tf.int32)
         c = tf.math.abs(gold_pair_indices-pred_pair_indices)
         d = tf.reduce_min(tf.reduce_sum(c, 2), 1)  #shape = [# of pruned candidate pairs]
 
         positive_weight = tf.cast(tf.shape(self.pair_indices)[0]/tf.shape(self.pair_gold)[0], tf.float32)
 
         weights = tf.where(d > 0, tf.cast(tf.ones_like(d), tf.float32), tf.cast(tf.ones_like(d), tf.float32) * positive_weight)
-
-        self.out1 = gold_pair_indices
-        self.out2 = pred_pair_indices
-        self.out3 = d
-        self.out4 = weights
 
         # pair_gold = tf.cast((d > 0), tf.int32)
         # gold = tf.expand_dims(tf.to_float(pair_gold),1)
@@ -227,6 +230,8 @@ class CorefModel(object):
         self.pair_identification_loss = -tf.reduce_sum(weights*tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
+        self.out1 = self.pair_indices
+        self.out2 = self.candidate_pair_probability
 
     def add_final_train(self):
         self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
@@ -402,6 +407,12 @@ class CorefModel(object):
 
                 file = train_files_path[batch_number]
                 [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, clusters, gold_2_local_phrase_id_map] = load_data(file)
+
+                #اضافه کردن عبارت خالی
+                phrase_word = np.concatenate((np.expand_dims(np.zeros_like(phrase_word[0]), axis=0), phrase_word))
+                phrase_word_len = np.concatenate(([0],phrase_word_len))
+                gold_phrase = np.concatenate(([0],gold_phrase))
+
                 if len(doc_word) == 0:
                     print("skip this file (zero length document): {}".format(file))
                     continue
@@ -450,9 +461,11 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pair_probability, pair_indices, summary, out1,out2,out3, out4] = \
-                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged
-                                          , self.out1, self.out2, self.out3, self.out4], feed_dict)
+                    # [_, loss, pair_probability, pair_indices, summary, out1, out2] = \
+                    #     self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged
+                    #                       , self.out1, self.out2], feed_dict)
+                    [out1, out2] = \
+                        self.sess.run([self.out1, self.out2], feed_dict)
 
                     extracted_pairs = pair_indices[pair_probability>0.5]
                     predicted_clusters = convert_pairs_to_clusters(extracted_pairs)
