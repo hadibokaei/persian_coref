@@ -149,6 +149,7 @@ class CorefModel(object):
         z2 = tf.reverse(z1, axis=[1])
         z2f = tf.expand_dims(z2, 1)
         zf = z1f + z2f
+        zf = tf.reverse(zf, axis=[2])
 
         # f = tf.reshape(zf, [-1, 2])
         # f = tf.cast(f, tf.int32)
@@ -189,8 +190,12 @@ class CorefModel(object):
         self.candidate_pair_logit = tf.squeeze(tf.keras.layers.Dense(1)(dense_output))              # shape = [num_of_pruned_phrases, num_of_pruned_phrases]
         self.candidate_pair_probability = tf.keras.layers.Softmax()(self.candidate_pair_logit)      # shape = [num_of_pruned_phrases, num_of_pruned_phrases]
 
-        self.pair_indices = tf.reshape(self.pair_indices, shape=[-1,2])
-        self.candidate_pair_probability = tf.reshape(self.candidate_pair_probability, shape=[-1])
+        self.predicted_pairs = tf.gather_nd(self.pair_indices
+                                            ,tf.stack([tf.range(0,tf.shape(self.candidate_pair_probability)[0])
+                                            , tf.cast(tf.arg_max(self.candidate_pair_probability,1), tf.int32)],1))
+
+        self.pair_indices_flat = tf.reshape(self.pair_indices, shape=[-1,2])
+        self.candidate_pair_probability_flat = tf.reshape(self.candidate_pair_probability, shape=[-1])
 
 
     def add_phrase_loss_train(self):
@@ -212,11 +217,11 @@ class CorefModel(object):
     def add_pair_loss_train(self):
 
         gold_pair_indices = tf.expand_dims(self.pair_gold, 0)
-        pred_pair_indices = tf.cast(tf.expand_dims(self.pair_indices, 1), tf.int32)
+        pred_pair_indices = tf.cast(tf.expand_dims(self.pair_indices_flat, 1), tf.int32)
         c = tf.math.abs(gold_pair_indices-pred_pair_indices)
         d = tf.reduce_min(tf.reduce_sum(c, 2), 1)  #shape = [# of pruned candidate pairs]
 
-        positive_weight = tf.cast(tf.shape(self.pair_indices)[0]/tf.shape(self.pair_gold)[0], tf.float32)
+        positive_weight = tf.cast(tf.shape(self.pair_indices_flat)[0]/tf.shape(self.pair_gold)[0], tf.float32)
 
         weights = tf.where(d > 0, tf.cast(tf.ones_like(d), tf.float32), tf.cast(tf.ones_like(d), tf.float32) * positive_weight)
 
@@ -227,11 +232,9 @@ class CorefModel(object):
         # pred = tf.expand_dims(self.candidate_phrase_logit, 1)
         # pred_2d = tf.concat([pred,1-pred],1)
 
-        self.pair_identification_loss = -tf.reduce_sum(weights*tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability, self.candidate_pair_probability)))
+        self.pair_identification_loss = -tf.reduce_sum(weights*tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability_flat, self.candidate_pair_probability_flat)))
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
-        self.out1 = self.pair_indices
-        self.out2 = self.candidate_pair_probability
 
     def add_final_train(self):
         self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
@@ -247,7 +250,7 @@ class CorefModel(object):
                 global_step += 1
 
                 file = train_files_path[batch_number]
-                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _, _] = load_data(file)
                 if len(doc_word) == 0:
                     print("skip this file (zero length document): {}".format(file))
                     continue
@@ -337,7 +340,7 @@ class CorefModel(object):
 
 
                 file = validation_files_path[doc_num]
-                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _, _] = load_data(file)
 
                 if len(doc_word) == 0:
                     print("skip this file (zero length document): {}".format(file))
@@ -406,12 +409,13 @@ class CorefModel(object):
                 global_step += 1
 
                 file = train_files_path[batch_number]
-                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, clusters, gold_2_local_phrase_id_map] = load_data(file)
+                [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, gold_phrase_id_pair, clusters, gold_2_local_phrase_id_map] = load_data(file)
 
                 #اضافه کردن عبارت خالی
                 phrase_word = np.concatenate((np.expand_dims(np.zeros_like(phrase_word[0]), axis=0), phrase_word))
                 phrase_word_len = np.concatenate(([0],phrase_word_len))
                 gold_phrase = np.concatenate(([0],gold_phrase))
+                gold_2_local_phrase_id_map[0] = 0
 
                 if len(doc_word) == 0:
                     print("skip this file (zero length document): {}".format(file))
@@ -419,7 +423,6 @@ class CorefModel(object):
                 if np.sum(gold_phrase) == 0:
                     print("skip this file (no phrase): {}".format(file))
                     continue
-
                 current_word_ids = doc_word
                 current_word_ids, current_sentence_length = pad_sequences(current_word_ids, 0)
 
@@ -430,13 +433,14 @@ class CorefModel(object):
                 current_doc_gold_phrases = gold_phrase
                 current_doc_phrase_length = phrase_word_len
 
-                z = [[[gold_2_local_phrase_id_map[x], gold_2_local_phrase_id_map[y]] for x in a for y in a if
-                      x < y and x in gold_2_local_phrase_id_map.keys() and y in gold_2_local_phrase_id_map.keys()] for a
-                     in clusters]
-
-                current_doc_pair_gold = []
-                for x in z:
-                    current_doc_pair_gold += x
+                current_doc_pair_gold = [[gold_2_local_phrase_id_map[a] for a in x] for x in gold_phrase_id_pair]
+                # z = [[[gold_2_local_phrase_id_map[x], gold_2_local_phrase_id_map[y]] for x in a for y in a if
+                #       x < y and x in gold_2_local_phrase_id_map.keys() and y in gold_2_local_phrase_id_map.keys()] for a
+                #      in clusters]
+                #
+                # current_doc_pair_gold = []
+                # for x in z:
+                #     current_doc_pair_gold += x
 
                 # current_gold_pair = pair_gold
                 # posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
@@ -461,16 +465,13 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    # [_, loss, pair_probability, pair_indices, summary, out1, out2] = \
-                    #     self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged
-                    #                       , self.out1, self.out2], feed_dict)
-                    [out1, out2] = \
-                        self.sess.run([self.out1, self.out2], feed_dict)
+                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs] = \
+                        self.sess.run([self.final_train, self.final_loss, self.candidate_pair_probability, self.pair_indices, self.merged, self.predicted_pairs], feed_dict)
 
-                    extracted_pairs = pair_indices[pair_probability>0.5]
-                    predicted_clusters = convert_pairs_to_clusters(extracted_pairs)
+                    predicted_clusters = convert_pairs_to_clusters(predicted_pairs)
                     gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
 
+                    print(predicted_pairs)
                     print(predicted_clusters)
                     print(gold_clusters)
 
@@ -576,7 +577,7 @@ class CorefModel(object):
         all_f1 = []
         for doc_num in range(len(test_files_path)):
             file = test_files_path[doc_num]
-            [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, clusters,
+            [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, gold_phrase_id_pair, clusters,
              gold_2_local_phrase_id_map] = load_data(file)
             if len(doc_word) == 0:
                 print("skip this file (zero length document): {}".format(file))
@@ -651,7 +652,7 @@ class CorefModel(object):
         for doc_num in range(len(test_files_path)):
 
             file = test_files_path[doc_num]
-            [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _] = load_data(file)
+            [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, _, _, _] = load_data(file)
 
             if len(doc_word) == 0:
                 print("skip this file (zero length document): {}".format(file))
