@@ -218,6 +218,9 @@ class CorefModel(object):
 
                 file = train_files_path[batch_number]
                 [doc_word, doc_char, phrase_word, phrase_word_len, gold_phrase, gold_phrase_id_pair, clusters, gold_2_local_phrase_id_map] = load_data(file)
+                if len(doc_word) == 0:
+                    print("{} skippend".format(file))
+                    continue
 
                 #اضافه کردن عبارت خالی
                 phrase_word = np.concatenate((np.expand_dims(np.zeros_like(phrase_word[0]), axis=0), phrase_word))
@@ -293,7 +296,7 @@ class CorefModel(object):
                     # print(np.shape(pair_indices))
 
                     predicted_clusters = convert_pairs_to_clusters(predicted_pairs)
-                    gold_clusters = [[gold_2_local_phrase_id_map[x] + 1 for x in a] for a  in clusters]
+                    gold_clusters = [[gold_2_local_phrase_id_map[x] + 1 for x in a if x in gold_2_local_phrase_id_map.keys()] for a  in clusters]
 
                     # print(predicted_pairs)
                     print(predicted_clusters)
