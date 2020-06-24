@@ -167,33 +167,44 @@ class CorefModel(object):
                                             ,tf.stack([tf.range(0,tf.shape(self.candidate_pair_probability)[0])
                                             , tf.cast(tf.arg_max(self.candidate_pair_probability,1), tf.int32)],1))
 
-        self.pair_indices_flat = tf.reshape(self.pair_indices, shape=[-1,2])
-        self.candidate_pair_probability_flat = tf.reshape(self.candidate_pair_probability, shape=[-1])
-
-
     def add_phrase_loss_train(self):
 
-        self.phrase_identification_loss = -tf.reduce_mean(tf.math.log(tf.where(self.gold_phrases>0
-                                                                              , self.candidate_phrase_probability
-                                                                              , 1-self.candidate_phrase_probability)))
-        tf.summary.scalar("phrase loss", self.phrase_identification_loss)
+        self.phrase_identification_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.cast(self.gold_phrases, tf.float32), logits=self.candidate_phrase_logit))
+
+        # self.phrase_identification_loss = -tf.reduce_mean(tf.math.log(tf.where(self.gold_phrases>0
+        #                                                                       , self.candidate_phrase_probability
+        #                                                                       , 1-self.candidate_phrase_probability)))
+        # tf.summary.scalar("phrase loss", self.phrase_identification_loss)
 
         self.phrase_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.phrase_identification_loss)
 
     def add_pair_loss_train(self):
 
-        gold_pair_indices = tf.expand_dims(self.pair_gold, 0)
-        pred_pair_indices = tf.cast(tf.expand_dims(self.pair_indices_flat, 1), tf.int32)
-        c = tf.math.abs(gold_pair_indices-pred_pair_indices)
-        d = tf.reduce_min(tf.reduce_sum(c, 2), 1)  #shape = [# of pruned candidate pairs]
+        a = tf.expand_dims(self.pair_indices, 2)
+        b = tf.expand_dims(self.pair_gold, 0)
+        c = tf.reduce_sum(tf.abs(a - b), -1)
 
-        self.pair_identification_loss = -tf.reduce_sum(tf.math.log(tf.where(d>0, 1-self.candidate_pair_probability_flat, self.candidate_pair_probability_flat)))
+        out1 = tf.reduce_min(c, 2)
+        out2 = tf.cast(tf.equal(out1, 0), tf.int32)
+        found_indices_ = tf.reduce_sum(out2, 1)
+        found_indices = tf.where(tf.math.greater(found_indices_, 0))
+
+        final_logits = tf.gather_nd(self.candidate_pair_logit, found_indices)
+        final_gold_dist = tf.gather_nd(out2, found_indices)
+        self.pair_indices = tf.gather_nd(self.pair_indices, found_indices)
+        final_gold_dist = final_gold_dist/tf.expand_dims(tf.reduce_sum(final_gold_dist,1),1)
+
+        self.pair_identification_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=final_gold_dist, logits=final_logits))
+
 
         self.pair_identification_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.pair_identification_loss)
-        self.out = d
+        self.final_logits = final_logits
+        self.final_gold_dist = final_gold_dist
+
 
     def add_final_train(self):
-        self.final_loss = self.phrase_identification_loss + self.pair_identification_loss
+        self.final_loss = 5*self.phrase_identification_loss + self.pair_identification_loss
+        # self.final_loss = self.pair_identification_loss
         self.final_train = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.final_loss)
 
     def train_pair_identification(self, word_embedding, train_files_path, validation_files_path, epoch_start, max_epoch_number, learning_rate):
@@ -212,7 +223,7 @@ class CorefModel(object):
                 phrase_word = np.concatenate((np.expand_dims(np.zeros_like(phrase_word[0]), axis=0), phrase_word))
                 phrase_word_len = np.concatenate(([0],phrase_word_len))
                 gold_phrase = np.concatenate(([0],gold_phrase))
-                gold_2_local_phrase_id_map[0] = 0
+                gold_2_local_phrase_id_map[0] = -1
 
                 if len(doc_word) == 0:
                     print("skip this file (zero length document): {}".format(file))
@@ -230,14 +241,21 @@ class CorefModel(object):
                 current_doc_gold_phrases = gold_phrase
                 current_doc_phrase_length = phrase_word_len
 
-                current_doc_pair_gold = [[gold_2_local_phrase_id_map[a]+1 for a in x if a in gold_2_local_phrase_id_map.keys()] for x in gold_phrase_id_pair]
-                # z = [[[gold_2_local_phrase_id_map[x], gold_2_local_phrase_id_map[y]] for x in a for y in a if
-                #       x < y and x in gold_2_local_phrase_id_map.keys() and y in gold_2_local_phrase_id_map.keys()] for a
-                #      in clusters]
-                #
-                # current_doc_pair_gold = []
-                # for x in z:
-                #     current_doc_pair_gold += x
+                # current_doc_pair_gold = [[gold_2_local_phrase_id_map[a]+1 for a in x if a in gold_2_local_phrase_id_map.keys()] for x in gold_phrase_id_pair]
+
+                # z = [[[gold_2_local_phrase_id_map[x]+1, gold_2_local_phrase_id_map[y]+1]
+                #       for x in a for y in a
+                #       if x in gold_2_local_phrase_id_map.keys() and y in gold_2_local_phrase_id_map.keys() and x!=y and x!=0 and x>y]
+                #      for a in clusters]
+
+
+                z_ = [list(x) for x in clusters]
+                z = [[[gold_2_local_phrase_id_map[y[x+1]]+1,gold_2_local_phrase_id_map[y[x]]+1]
+                      for x in range(len(y)-1) if y[x+1] in gold_2_local_phrase_id_map.keys() and y[x] in gold_2_local_phrase_id_map.keys()] for y in z_]
+
+                current_doc_pair_gold = []
+                for x in z:
+                    current_doc_pair_gold += x
 
                 # current_gold_pair = pair_gold
                 # posetive_indices = np.squeeze(np.argwhere(current_gold_pair == 1))
@@ -262,25 +280,24 @@ class CorefModel(object):
                     self.learning_rate: learning_rate
                 }
                 try:
-                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs, indices,pair_rep, out] = \
-                        self.sess.run([self.pair_identification_train
-                                          , self.pair_identification_loss
-                                          , self.candidate_pair_probability_flat
+                    [_, loss, pair_probability, pair_indices, summary, predicted_pairs, indices,pair_rep, final_logits, final_gold_dist, phrase_rep] = \
+                        self.sess.run([self.final_train
+                                          , self.final_loss
+                                          , self.candidate_pair_probability
                                           , self.pair_indices
                                           , self.merged
                                           , self.predicted_pairs
-                                          , self.indices, self.pair_rep, self.out
+                                          , self.indices, self.pair_rep, self.final_logits, self.final_gold_dist, self.phrase_rep
                                        ], feed_dict)
 
+                    # print(np.shape(pair_indices))
+
                     predicted_clusters = convert_pairs_to_clusters(predicted_pairs)
-                    gold_clusters = [[{gold_2_local_phrase_id_map[x]} for x in a] for a  in clusters]
+                    gold_clusters = [[gold_2_local_phrase_id_map[x] + 1 for x in a] for a  in clusters]
 
-                    print(pair_probability)
-                    print(out)
-
-                    print(predicted_pairs)
-                    # print(predicted_clusters)
-                    # print(gold_clusters)
+                    # print(predicted_pairs)
+                    print(predicted_clusters)
+                    print(gold_clusters)
 
                     # [_, loss, pred, summary] = self.sess.run([self.pair_identification_train, self.pair_identification_loss
                     #                                           , self.candidate_pair_probability, self.merged], feed_dict)
@@ -306,9 +323,9 @@ class CorefModel(object):
                 except Exception as e:
                     print("here:{}".format(e))
 
-            # save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
-            #                             global_step=int(epoch), write_meta_graph=False)
-            # logger.info("model is saved in: {}".format(save_path))
+            save_path = self.saver.save(self.sess, "{}/coref_model".format(self.dir_checkpoint),
+                                        global_step=int(epoch), write_meta_graph=False)
+            logger.info("model is saved in: {}".format(save_path))
             # all_precision = []
             # all_recall = []
             # all_f1 = []

@@ -279,7 +279,7 @@ def convert_pairs_to_clusters(pairs):
         found = False
         for i in range(len(clusters)):
             cluster = clusters[i]
-            if pair[0] in cluster or pair[1] in cluster:
+            if (pair[0] != 0 and pair[0] in cluster) or (pair[1] != 0 and pair[1] in cluster):
                 clusters[i].update(pair)
                 found = True
 
